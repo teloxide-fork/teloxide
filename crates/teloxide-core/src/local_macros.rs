@@ -931,6 +931,23 @@ macro_rules! requester_forward {
             $body!(decline_chat_join_request this (chat_id: C, user_id: UserId))
         }
     };
+    (@method answer_chat_join_request_query $body:ident $ty:ident) => {
+        type AnswerChatJoinRequestQuery = $ty![AnswerChatJoinRequestQuery];
+
+        fn answer_chat_join_request_query<C>(&self, chat_join_request_query_id: C, result: ChatJoinRequestQueryResult) -> Self::AnswerChatJoinRequestQuery where C: Into<String> {
+            let this = self;
+            $body!(answer_chat_join_request_query this (chat_join_request_query_id: C, result: ChatJoinRequestQueryResult))
+        }
+    };
+    (@method send_chat_join_request_web_app $body:ident $ty:ident) => {
+        type SendChatJoinRequestWebApp = $ty![SendChatJoinRequestWebApp];
+
+        fn send_chat_join_request_web_app<C, W>(&self, chat_join_request_query_id: C, web_app_url: W) -> Self::SendChatJoinRequestWebApp where C: Into<String>,
+        W: Into<String> {
+            let this = self;
+            $body!(send_chat_join_request_web_app this (chat_join_request_query_id: C, web_app_url: W))
+        }
+    };
     (@method set_chat_photo $body:ident $ty:ident) => {
         type SetChatPhoto = $ty![SetChatPhoto];
 

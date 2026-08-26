@@ -17,6 +17,7 @@ pub mod setters;
 
 mod add_sticker_to_set;
 mod answer_callback_query;
+mod answer_chat_join_request_query;
 mod answer_guest_query;
 mod answer_inline_query;
 mod answer_pre_checkout_query;
@@ -131,6 +132,7 @@ mod save_prepared_keyboard_button;
 mod send_animation;
 mod send_audio;
 mod send_chat_action;
+mod send_chat_join_request_web_app;
 mod send_checklist;
 mod send_contact;
 mod send_dice;
@@ -204,6 +206,9 @@ mod verify_user;
 
 pub use add_sticker_to_set::{AddStickerToSet, AddStickerToSetSetters};
 pub use answer_callback_query::{AnswerCallbackQuery, AnswerCallbackQuerySetters};
+pub use answer_chat_join_request_query::{
+    AnswerChatJoinRequestQuery, AnswerChatJoinRequestQuerySetters,
+};
 pub use answer_guest_query::{AnswerGuestQuery, AnswerGuestQuerySetters};
 pub use answer_inline_query::{AnswerInlineQuery, AnswerInlineQuerySetters};
 pub use answer_pre_checkout_query::{AnswerPreCheckoutQuery, AnswerPreCheckoutQuerySetters};
@@ -344,6 +349,9 @@ pub use save_prepared_keyboard_button::{
 pub use send_animation::{SendAnimation, SendAnimationSetters};
 pub use send_audio::{SendAudio, SendAudioSetters};
 pub use send_chat_action::{SendChatAction, SendChatActionSetters};
+pub use send_chat_join_request_web_app::{
+    SendChatJoinRequestWebApp, SendChatJoinRequestWebAppSetters,
+};
 pub use send_checklist::{SendChecklist, SendChecklistSetters};
 pub use send_contact::{SendContact, SendContactSetters};
 pub use send_dice::{SendDice, SendDiceSetters};

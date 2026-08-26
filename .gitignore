@@ -2,3 +2,6 @@
 .idea/
 .vscode/
 *.sqlite
+
+# deepwork orchestration state (git-local, not shared)
+.slim/deepwork/

@@ -711,6 +711,29 @@ pub trait Requester {
     where
         C: Into<Recipient>;
 
+    type AnswerChatJoinRequestQuery: Request<Payload = AnswerChatJoinRequestQuery, Err = Self::Err>;
+
+    /// For Telegram documentation see [`AnswerChatJoinRequestQuery`].
+    fn answer_chat_join_request_query<C>(
+        &self,
+        chat_join_request_query_id: C,
+        result: ChatJoinRequestQueryResult,
+    ) -> Self::AnswerChatJoinRequestQuery
+    where
+        C: Into<String>;
+
+    type SendChatJoinRequestWebApp: Request<Payload = SendChatJoinRequestWebApp, Err = Self::Err>;
+
+    /// For Telegram documentation see [`SendChatJoinRequestWebApp`].
+    fn send_chat_join_request_web_app<C, W>(
+        &self,
+        chat_join_request_query_id: C,
+        web_app_url: W,
+    ) -> Self::SendChatJoinRequestWebApp
+    where
+        C: Into<String>,
+        W: Into<String>;
+
     type SetChatPhoto: Request<Payload = SetChatPhoto, Err = Self::Err>;
 
     /// For Telegram documentation see [`SetChatPhoto`].
@@ -1995,7 +2018,9 @@ macro_rules! forward_all {
             set_game_score_inline,
             get_game_high_scores,
             approve_chat_join_request,
-            decline_chat_join_request
+            decline_chat_join_request,
+            answer_chat_join_request_query,
+            send_chat_join_request_web_app
             => $body, $ty
         }
     };

@@ -127,6 +127,7 @@ mod tests {
                 allows_users_to_create_topics: false,
                 can_manage_bots: false,
                 supports_guest_queries: false,
+                supports_join_request_queries: None,
             },
             chat_instance: "123456".to_string(),
             message: None,

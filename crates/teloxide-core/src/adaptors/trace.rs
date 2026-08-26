@@ -301,7 +301,9 @@ where
         set_game_score_inline,
         get_game_high_scores,
         approve_chat_join_request,
-        decline_chat_join_request
+        decline_chat_join_request,
+        answer_chat_join_request_query,
+        send_chat_join_request_web_app
         => fwd_inner, fty
     }
 }

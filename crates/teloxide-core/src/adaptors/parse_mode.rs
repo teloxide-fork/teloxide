@@ -357,7 +357,9 @@ where
         set_game_score_inline,
         get_game_high_scores,
         approve_chat_join_request,
-        decline_chat_join_request
+        decline_chat_join_request,
+        answer_chat_join_request_query,
+        send_chat_join_request_web_app
         => fid, ftyid
     }
 }
@@ -656,7 +658,7 @@ fn visit_parse_modes_in_input_poll_option_media(
             &media.caption_entities,
             visitor,
         ),
-        Location(_) | Sticker(_) | Venue(_) => {}
+        Link(_) | Location(_) | Sticker(_) | Venue(_) => {}
     }
 }
 

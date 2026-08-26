@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::types::{
-    Animation, Audio, Document, LivePhoto, Location, PhotoSize, Sticker, Venue, Video,
+    Animation, Audio, Document, Link, LivePhoto, Location, PhotoSize, Sticker, Venue, Video,
 };
 
 /// This object describes media attached to a poll.
@@ -19,6 +19,9 @@ pub struct PollMedia {
 
     /// Document attached to the poll.
     pub document: Option<Document>,
+
+    /// The HTTP link attached to the poll option.
+    pub link: Option<Link>,
 
     /// Live photo attached to the poll.
     pub live_photo: Option<LivePhoto>,
@@ -69,6 +72,7 @@ mod tests {
             animation: None,
             audio: None,
             document: None,
+            link: None,
             live_photo: Some(LivePhoto {
                 file_id: "live-photo".to_owned(),
                 file_unique_id: "unique-live-photo".to_owned(),
@@ -89,5 +93,19 @@ mod tests {
         let value = serde_json::to_value(media).unwrap();
         assert_eq!(value["live_photo"]["file_id"], "live-photo");
         assert!(value.get("type").is_none());
+    }
+
+    #[test]
+    fn deserialize_link() {
+        let media: PollMedia = serde_json::from_str(
+            r#"{
+                "link":{
+                    "url":"https://example.com"
+                }
+            }"#,
+        )
+        .unwrap();
+
+        assert_eq!(media.link.unwrap().url, "https://example.com");
     }
 }

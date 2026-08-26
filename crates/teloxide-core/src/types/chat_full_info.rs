@@ -115,6 +115,10 @@ pub struct ChatFullInfo {
     /// The maximum number of reactions that can be set on a message in the
     /// chat
     pub max_reaction_count: u8,
+
+    /// The bot that processes join request queries in the chat. The field is
+    /// only available to chat administrators.
+    pub guard_bot: Option<User>,
 }
 
 #[serde_with::skip_serializing_none]
@@ -774,6 +778,7 @@ mod tests {
             emoji_status_expiration_date: DateTime::from_timestamp(1720708004, 0),
             has_visible_history: false,
             max_reaction_count: 0,
+            guard_bot: None,
         };
         let actual = from_str(
             r#"{
@@ -841,6 +846,7 @@ mod tests {
             emoji_status_expiration_date: DateTime::from_timestamp(1720708004, 0),
             has_visible_history: false,
             max_reaction_count: 0,
+            guard_bot: None,
         };
         eprintln!("{}", to_string(&chat).unwrap());
         assert_eq!(
@@ -906,6 +912,7 @@ mod tests {
             emoji_status_expiration_date: None,
             has_visible_history: false,
             max_reaction_count: 0,
+            guard_bot: None,
         };
 
         let json = to_string(&chat).unwrap();

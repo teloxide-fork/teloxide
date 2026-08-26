@@ -373,7 +373,9 @@ where
         set_game_score_inline,
         get_game_high_scores,
         approve_chat_join_request,
-        decline_chat_join_request
+        decline_chat_join_request,
+        answer_chat_join_request_query,
+        send_chat_join_request_web_app
         => fwd_erased, fty
     }
 }
@@ -706,6 +708,20 @@ trait ErasableRequester<'a> {
         chat_id: Recipient,
         user_id: UserId,
     ) -> ErasedRequest<'a, DeclineChatJoinRequest, Self::Err>;
+
+    /// For Telegram documentation see [`AnswerChatJoinRequestQuery`].
+    fn answer_chat_join_request_query(
+        &self,
+        chat_join_request_query_id: String,
+        result: ChatJoinRequestQueryResult,
+    ) -> ErasedRequest<'a, AnswerChatJoinRequestQuery, Self::Err>;
+
+    /// For Telegram documentation see [`SendChatJoinRequestWebApp`].
+    fn send_chat_join_request_web_app(
+        &self,
+        chat_join_request_query_id: String,
+        web_app_url: String,
+    ) -> ErasedRequest<'a, SendChatJoinRequestWebApp, Self::Err>;
 
     fn set_chat_photo(
         &self,
@@ -1834,6 +1850,25 @@ where
         user_id: UserId,
     ) -> ErasedRequest<'a, DeclineChatJoinRequest, Self::Err> {
         Requester::decline_chat_join_request(self, chat_id, user_id).erase()
+    }
+
+    /// For Telegram documentation see [`AnswerChatJoinRequestQuery`].
+    fn answer_chat_join_request_query(
+        &self,
+        chat_join_request_query_id: String,
+        result: ChatJoinRequestQueryResult,
+    ) -> ErasedRequest<'a, AnswerChatJoinRequestQuery, Self::Err> {
+        Requester::answer_chat_join_request_query(self, chat_join_request_query_id, result).erase()
+    }
+
+    /// For Telegram documentation see [`SendChatJoinRequestWebApp`].
+    fn send_chat_join_request_web_app(
+        &self,
+        chat_join_request_query_id: String,
+        web_app_url: String,
+    ) -> ErasedRequest<'a, SendChatJoinRequestWebApp, Self::Err> {
+        Requester::send_chat_join_request_web_app(self, chat_join_request_query_id, web_app_url)
+            .erase()
     }
 
     fn set_chat_photo(

@@ -3366,6 +3366,7 @@ mod tests {
                     allows_users_to_create_topics: false,
                     can_manage_bots: false,
                     supports_guest_queries: false,
+                    supports_join_request_queries: None,
                 }],
                 additional_chat_count: None,
                 premium_subscription_month_count: Some(6),

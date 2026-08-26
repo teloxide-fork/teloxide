@@ -6,11 +6,11 @@ use crate::{
     requests::{JsonRequest, MultipartRequest},
     types::{
         AcceptedGiftTypes, BotCommand, BusinessConnectionId, CallbackQueryId, ChatId,
-        ChatPermissions, CustomEmojiId, FileId, GiftId, InlineQueryId, InlineQueryResult,
-        InputChecklist, InputFile, InputMedia, InputPaidMedia, InputPollOption, InputProfilePhoto,
-        InputSticker, InputStoryContent, KeyboardButton, LabeledPrice, MessageId, OwnedGiftId,
-        PreCheckoutQueryId, Recipient, Seconds, ShippingQueryId, StickerFormat, StoryId,
-        TelegramTransactionId, ThreadId, UserId,
+        ChatJoinRequestQueryResult, ChatPermissions, CustomEmojiId, FileId, GiftId, InlineQueryId,
+        InlineQueryResult, InputChecklist, InputFile, InputMedia, InputPaidMedia, InputPollOption,
+        InputProfilePhoto, InputSticker, InputStoryContent, KeyboardButton, LabeledPrice,
+        MessageId, OwnedGiftId, PreCheckoutQueryId, Recipient, Seconds, ShippingQueryId,
+        StickerFormat, StoryId, TelegramTransactionId, ThreadId, UserId,
     },
     Bot,
 };
@@ -669,6 +669,39 @@ impl Requester for Bot {
         Self::DeclineChatJoinRequest::new(
             self.clone(),
             payloads::DeclineChatJoinRequest::new(chat_id, user_id),
+        )
+    }
+
+    type AnswerChatJoinRequestQuery = JsonRequest<payloads::AnswerChatJoinRequestQuery>;
+
+    fn answer_chat_join_request_query<C>(
+        &self,
+        chat_join_request_query_id: C,
+        result: ChatJoinRequestQueryResult,
+    ) -> Self::AnswerChatJoinRequestQuery
+    where
+        C: Into<String>,
+    {
+        Self::AnswerChatJoinRequestQuery::new(
+            self.clone(),
+            payloads::AnswerChatJoinRequestQuery::new(chat_join_request_query_id, result),
+        )
+    }
+
+    type SendChatJoinRequestWebApp = JsonRequest<payloads::SendChatJoinRequestWebApp>;
+
+    fn send_chat_join_request_web_app<C, W>(
+        &self,
+        chat_join_request_query_id: C,
+        web_app_url: W,
+    ) -> Self::SendChatJoinRequestWebApp
+    where
+        C: Into<String>,
+        W: Into<String>,
+    {
+        Self::SendChatJoinRequestWebApp::new(
+            self.clone(),
+            payloads::SendChatJoinRequestWebApp::new(chat_join_request_query_id, web_app_url),
         )
     }
 

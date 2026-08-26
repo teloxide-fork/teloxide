@@ -1,8 +1,9 @@
 use serde::Serialize;
 
 use crate::types::{
-    InputFile, InputMediaAnimation, InputMediaAudio, InputMediaDocument, InputMediaLivePhoto,
-    InputMediaLocation, InputMediaPhoto, InputMediaSticker, InputMediaVenue, InputMediaVideo,
+    InputFile, InputMediaAnimation, InputMediaAudio, InputMediaDocument, InputMediaLink,
+    InputMediaLivePhoto, InputMediaLocation, InputMediaPhoto, InputMediaSticker, InputMediaVenue,
+    InputMediaVideo,
 };
 
 /// This object represents media to be sent with a poll.
@@ -32,6 +33,7 @@ pub enum InputPollMedia {
 #[serde(rename_all = "snake_case")]
 pub enum InputPollOptionMedia {
     Animation(InputMediaAnimation),
+    Link(InputMediaLink),
     LivePhoto(InputMediaLivePhoto),
     Location(InputMediaLocation),
     Photo(InputMediaPhoto),
@@ -86,7 +88,7 @@ impl InputPollOptionMedia {
         let files = match self {
             Animation(media) => [Some(&media.media), media.thumbnail.as_ref(), None],
             LivePhoto(media) => [Some(&media.media), Some(&media.photo), None],
-            Location(_) | Venue(_) => [None, None, None],
+            Link(_) | Location(_) | Venue(_) => [None, None, None],
             Photo(media) => [Some(&media.media), None, None],
             Sticker(media) => [Some(&media.media), None, None],
             Video(media) => [Some(&media.media), media.thumbnail.as_ref(), media.cover.as_ref()],
@@ -102,7 +104,7 @@ impl InputPollOptionMedia {
         let files = match self {
             Animation(media) => [Some(&mut media.media), media.thumbnail.as_mut(), None],
             LivePhoto(media) => [Some(&mut media.media), Some(&mut media.photo), None],
-            Location(_) | Venue(_) => [None, None, None],
+            Link(_) | Location(_) | Venue(_) => [None, None, None],
             Photo(media) => [Some(&mut media.media), None, None],
             Sticker(media) => [Some(&mut media.media), None, None],
             Video(media) => {
@@ -117,8 +119,9 @@ impl InputPollOptionMedia {
 #[cfg(test)]
 mod tests {
     use crate::types::{
-        InputFile, InputMediaAnimation, InputMediaAudio, InputMediaDocument, InputMediaLivePhoto,
-        InputMediaLocation, InputMediaPhoto, InputMediaSticker, InputMediaVenue, InputMediaVideo,
+        InputFile, InputMediaAnimation, InputMediaAudio, InputMediaDocument, InputMediaLink,
+        InputMediaLivePhoto, InputMediaLocation, InputMediaPhoto, InputMediaSticker,
+        InputMediaVenue, InputMediaVideo,
     };
 
     use super::*;
@@ -147,6 +150,7 @@ mod tests {
         let file = || InputFile::file_id("media".into());
         let media = vec![
             (InputPollOptionMedia::Animation(InputMediaAnimation::new(file())), "animation"),
+            (InputPollOptionMedia::Link(InputMediaLink::new("https://example.com")), "link"),
             (
                 InputPollOptionMedia::LivePhoto(InputMediaLivePhoto::new(file(), file())),
                 "live_photo",
