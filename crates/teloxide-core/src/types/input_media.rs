@@ -2,7 +2,7 @@ use std::iter;
 
 use serde::Serialize;
 
-use crate::types::{InputFile, MessageEntity, ParseMode, Seconds};
+use crate::types::{InputFile, InputFileLike, MessageEntity, ParseMode, Seconds};
 
 /// This object represents the content of a media message to be sent.
 ///
@@ -18,6 +18,25 @@ pub enum InputMedia {
     Audio(InputMediaAudio),
     Document(InputMediaDocument),
     LivePhoto(InputMediaLivePhoto),
+    VoiceNote(InputMediaVoiceNote),
+}
+
+/// Media that can be embedded in an
+/// [`InputRichMessageMedia`](crate::types::InputRichMessageMedia).
+///
+/// Unlike [`InputMedia`], this union intentionally excludes documents and live
+/// photos because the Bot API does not allow them in rich messages.
+#[derive(Clone, Debug, Serialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+#[cfg_attr(test, schemars(inline))]
+#[cfg_attr(test, schemars(!tag, untagged))]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum InputRichMedia {
+    Animation(InputMediaAnimation),
+    Audio(InputMediaAudio),
+    Photo(InputMediaPhoto),
+    Video(InputMediaVideo),
+    VoiceNote(InputMediaVoiceNote),
 }
 
 /// Represents a photo to be sent.
@@ -596,6 +615,67 @@ impl InputMediaAudio {
     }
 }
 
+/// Represents a voice note to be sent.
+///
+/// [The official docs](https://core.telegram.org/bots/api#inputmediavoicenote).
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Serialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+pub struct InputMediaVoiceNote {
+    /// File to send.
+    pub media: InputFile,
+
+    /// Caption of the voice note to be sent, 0-1024 characters.
+    pub caption: Option<String>,
+
+    /// Send [Markdown] or [HTML] formatting in the caption.
+    ///
+    /// [Markdown]: https://core.telegram.org/bots/api#markdown-style
+    /// [HTML]: https://core.telegram.org/bots/api#html-style
+    pub parse_mode: Option<ParseMode>,
+
+    /// List of special entities that appear in the caption, which can be
+    /// specified instead of `parse_mode`.
+    pub caption_entities: Option<Vec<MessageEntity>>,
+
+    /// Duration of the voice note in seconds.
+    pub duration: Option<u16>,
+}
+
+impl InputMediaVoiceNote {
+    pub const fn new(media: InputFile) -> Self {
+        Self { media, caption: None, parse_mode: None, caption_entities: None, duration: None }
+    }
+
+    pub fn media(mut self, media: InputFile) -> Self {
+        self.media = media;
+        self
+    }
+
+    pub fn caption(mut self, caption: impl Into<String>) -> Self {
+        self.caption = Some(caption.into());
+        self
+    }
+
+    pub const fn parse_mode(mut self, parse_mode: ParseMode) -> Self {
+        self.parse_mode = Some(parse_mode);
+        self
+    }
+
+    pub fn caption_entities<C>(mut self, caption_entities: C) -> Self
+    where
+        C: IntoIterator<Item = MessageEntity>,
+    {
+        self.caption_entities = Some(caption_entities.into_iter().collect());
+        self
+    }
+
+    pub const fn duration(mut self, duration: u16) -> Self {
+        self.duration = Some(duration);
+        self
+    }
+}
+
 /// Represents a general file to be sent.
 ///
 /// [The official docs](https://core.telegram.org/bots/api#inputmediadocument).
@@ -817,7 +897,8 @@ impl From<InputMedia> for InputFile {
             | InputMedia::Audio(InputMediaAudio { media, .. })
             | InputMedia::Animation(InputMediaAnimation { media, .. })
             | InputMedia::Video(InputMediaVideo { media, .. })
-            | InputMedia::LivePhoto(InputMediaLivePhoto { media, .. }) => media,
+            | InputMedia::LivePhoto(InputMediaLivePhoto { media, .. })
+            | InputMedia::VoiceNote(InputMediaVoiceNote { media, .. }) => media,
         }
     }
 }
@@ -834,6 +915,7 @@ impl InputMedia {
             | Animation(InputMediaAnimation { media, thumbnail, .. })
             | Video(InputMediaVideo { media, thumbnail, .. }) => (media, thumbnail.as_ref()),
             LivePhoto(InputMediaLivePhoto { media, photo, .. }) => (media, Some(photo)),
+            VoiceNote(InputMediaVoiceNote { media, .. }) => (media, None),
         };
 
         iter::once(media).chain(thumbnail)
@@ -850,9 +932,56 @@ impl InputMedia {
             | Animation(InputMediaAnimation { media, thumbnail, .. })
             | Video(InputMediaVideo { media, thumbnail, .. }) => (media, thumbnail.as_mut()),
             LivePhoto(InputMediaLivePhoto { media, photo, .. }) => (media, Some(photo)),
+            VoiceNote(InputMediaVoiceNote { media, .. }) => (media, None),
         };
 
         iter::once(media).chain(thumbnail)
+    }
+}
+
+impl InputRichMedia {
+    pub(crate) fn copy_into(&self, into: &mut dyn FnMut(InputFile)) {
+        match self {
+            Self::Animation(InputMediaAnimation { media, thumbnail, .. })
+            | Self::Audio(InputMediaAudio { media, thumbnail, .. }) => {
+                media.copy_into(into);
+                thumbnail.copy_into(into);
+            }
+            Self::Photo(InputMediaPhoto { media, .. })
+            | Self::VoiceNote(InputMediaVoiceNote { media, .. }) => media.copy_into(into),
+            Self::Video(InputMediaVideo { media, thumbnail, cover, .. }) => {
+                media.copy_into(into);
+                thumbnail.copy_into(into);
+                cover.copy_into(into);
+            }
+        }
+    }
+
+    pub(crate) fn move_into(&mut self, into: &mut dyn FnMut(InputFile)) {
+        match self {
+            Self::Animation(InputMediaAnimation { media, thumbnail, .. })
+            | Self::Audio(InputMediaAudio { media, thumbnail, .. }) => {
+                media.move_into(into);
+                thumbnail.move_into(into);
+            }
+            Self::Photo(InputMediaPhoto { media, .. })
+            | Self::VoiceNote(InputMediaVoiceNote { media, .. }) => media.move_into(into),
+            Self::Video(InputMediaVideo { media, thumbnail, cover, .. }) => {
+                media.move_into(into);
+                thumbnail.move_into(into);
+                cover.move_into(into);
+            }
+        }
+    }
+}
+
+impl InputFileLike for InputMedia {
+    fn copy_into(&self, into: &mut dyn FnMut(InputFile)) {
+        self.files().for_each(|file| file.copy_into(into));
+    }
+
+    fn move_into(&mut self, into: &mut dyn FnMut(InputFile)) {
+        self.files_mut().for_each(|file| file.move_into(into));
     }
 }
 
@@ -964,5 +1093,46 @@ mod tests {
         assert_eq!(value["type"], "live_photo");
         assert_eq!(value["media"], "video");
         assert_eq!(value["photo"], "photo");
+    }
+
+    #[test]
+    fn voice_note_serialize() {
+        let value = serde_json::to_value(InputMedia::VoiceNote(InputMediaVoiceNote::new(
+            InputFile::file_id("voice".into()),
+        )))
+        .unwrap();
+        assert_eq!(value["type"], "voice_note");
+        assert_eq!(value["media"], "voice");
+    }
+
+    #[test]
+    fn voice_note_files_are_traversed() {
+        let mut media = InputMedia::VoiceNote(InputMediaVoiceNote::new(InputFile::memory("voice")));
+
+        assert_eq!(media.files().count(), 1);
+        assert_eq!(media.files_mut().count(), 1);
+    }
+
+    #[test]
+    fn rich_media_is_limited_and_serializes_its_tag() {
+        let media = InputRichMedia::Photo(InputMediaPhoto::new(InputFile::file_id("photo".into())));
+        assert_eq!(serde_json::to_value(media).unwrap()["type"], "photo");
+    }
+
+    #[test]
+    fn rich_media_files_are_traversed() {
+        let media = [
+            InputRichMedia::Animation(InputMediaAnimation::new(InputFile::memory("animation"))),
+            InputRichMedia::Audio(InputMediaAudio::new(InputFile::memory("audio"))),
+            InputRichMedia::Photo(InputMediaPhoto::new(InputFile::memory("photo"))),
+            InputRichMedia::Video(InputMediaVideo::new(InputFile::memory("video"))),
+            InputRichMedia::VoiceNote(InputMediaVoiceNote::new(InputFile::memory("voice"))),
+        ];
+
+        let mut files = 0;
+        for medium in media {
+            medium.copy_into(&mut |_| files += 1);
+        }
+        assert_eq!(files, 5);
     }
 }

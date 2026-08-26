@@ -14,6 +14,9 @@ pub struct BotCommand {
 
     /// Description of the command, 3-256 characters.
     pub description: String,
+
+    /// `true`, if the command is available only in ephemeral messages.
+    pub is_ephemeral: Option<bool>,
 }
 
 impl BotCommand {
@@ -22,7 +25,7 @@ impl BotCommand {
         S1: Into<String>,
         S2: Into<String>,
     {
-        Self { command: command.into(), description: description.into() }
+        Self { command: command.into(), description: description.into(), is_ephemeral: None }
     }
 
     pub fn command<S>(mut self, val: S) -> Self
@@ -39,5 +42,24 @@ impl BotCommand {
     {
         self.description = val.into();
         self
+    }
+
+    pub const fn is_ephemeral(mut self, val: bool) -> Self {
+        self.is_ephemeral = Some(val);
+        self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deserializes_ephemeral_command() {
+        let command: BotCommand = serde_json::from_str(
+            r#"{"command":"start","description":"Start the bot","is_ephemeral":true}"#,
+        )
+        .unwrap();
+        assert_eq!(command.is_ephemeral, Some(true));
     }
 }

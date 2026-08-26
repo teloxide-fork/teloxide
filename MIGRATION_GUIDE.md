@@ -5,6 +5,22 @@ Note that the list of required changes is not fully exhaustive and it may lack s
 
 ### teloxide-core
 
+TBA 10.2 made the `message_id` field of `ReplyParameters` optional (`Option<MessageId>`, previously `MessageId`), since a reply can now instead identify an ephemeral message via the new `ephemeral_message_id` field. Exactly one of `message_id`/`ephemeral_message_id` must be set. The `ReplyParameters::new(message_id)` constructor is unaffected and still takes a plain `MessageId`; only code that reads the `message_id` field directly, or constructs `ReplyParameters` with struct-literal syntax, needs to change:
+
+```diff
+-let id: MessageId = reply_parameters.message_id;
++let id: Option<MessageId> = reply_parameters.message_id;
+
+-ReplyParameters { message_id, ..ReplyParameters::default() }
++ReplyParameters { message_id: Some(message_id), ..ReplyParameters::default() }
+```
+
+TBA 10.2's rich-message input (`InputRichMessage`) can now carry structured `blocks`/`media` content in addition to `html`/`markdown`. Because of this:
+- `InputRichMessage` and `InputMessageContentRichMessage` no longer derive `Eq`/`Hash` (they still derive `PartialEq`).
+- `EditMessageText`, `EditMessageTextInline`, `SendRichMessage`, and `SendRichMessageDraft` no longer derive `PartialEq`, `Eq`, or `Hash` at all (matching how `InputMedia`-carrying payloads already behave).
+
+Code that compared these values for equality, or used them as `HashMap`/`HashSet` keys, needs to be updated to avoid relying on those traits.
+
 TBA 10.1 made the `text` parameter of `edit_message_text`/`edit_message_text_inline` optional, since a message can now instead be edited with a `rich_message` (`InputRichMessage`). Because of this, `text` is no longer a positional constructor argument and must be set via the `.text(...)` builder method:
 
 ```diff

@@ -307,10 +307,15 @@ where
         edit_message_media_inline,
         edit_message_reply_markup,
         edit_message_reply_markup_inline,
+        edit_ephemeral_message_text,
+        edit_ephemeral_message_caption,
+        edit_ephemeral_message_media,
+        edit_ephemeral_message_reply_markup,
         stop_poll,
         approve_suggested_post,
         decline_suggested_post,
         delete_message,
+        delete_ephemeral_message,
         delete_messages,
         delete_message_reaction,
         delete_all_message_reactions,
@@ -1035,6 +1040,36 @@ trait ErasableRequester<'a> {
         inline_message_id: String,
     ) -> ErasedRequest<'a, EditMessageReplyMarkupInline, Self::Err>;
 
+    fn edit_ephemeral_message_text(
+        &self,
+        chat_id: Recipient,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+        text: String,
+    ) -> ErasedRequest<'a, EditEphemeralMessageText, Self::Err>;
+
+    fn edit_ephemeral_message_caption(
+        &self,
+        chat_id: Recipient,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+    ) -> ErasedRequest<'a, EditEphemeralMessageCaption, Self::Err>;
+
+    fn edit_ephemeral_message_media(
+        &self,
+        chat_id: Recipient,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+        media: InputMedia,
+    ) -> ErasedRequest<'a, EditEphemeralMessageMedia, Self::Err>;
+
+    fn edit_ephemeral_message_reply_markup(
+        &self,
+        chat_id: Recipient,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+    ) -> ErasedRequest<'a, EditEphemeralMessageReplyMarkup, Self::Err>;
+
     fn stop_poll(
         &self,
         chat_id: Recipient,
@@ -1058,6 +1093,13 @@ trait ErasableRequester<'a> {
         chat_id: Recipient,
         message_id: MessageId,
     ) -> ErasedRequest<'a, DeleteMessage, Self::Err>;
+
+    fn delete_ephemeral_message(
+        &self,
+        chat_id: Recipient,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+    ) -> ErasedRequest<'a, DeleteEphemeralMessage, Self::Err>;
 
     fn delete_messages(
         &self,
@@ -2322,6 +2364,70 @@ where
         Requester::edit_message_reply_markup_inline(self, inline_message_id).erase()
     }
 
+    fn edit_ephemeral_message_text(
+        &self,
+        chat_id: Recipient,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+        text: String,
+    ) -> ErasedRequest<'a, EditEphemeralMessageText, Self::Err> {
+        Requester::edit_ephemeral_message_text(
+            self,
+            chat_id,
+            receiver_user_id,
+            ephemeral_message_id,
+            text,
+        )
+        .erase()
+    }
+
+    fn edit_ephemeral_message_caption(
+        &self,
+        chat_id: Recipient,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+    ) -> ErasedRequest<'a, EditEphemeralMessageCaption, Self::Err> {
+        Requester::edit_ephemeral_message_caption(
+            self,
+            chat_id,
+            receiver_user_id,
+            ephemeral_message_id,
+        )
+        .erase()
+    }
+
+    fn edit_ephemeral_message_media(
+        &self,
+        chat_id: Recipient,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+        media: InputMedia,
+    ) -> ErasedRequest<'a, EditEphemeralMessageMedia, Self::Err> {
+        Requester::edit_ephemeral_message_media(
+            self,
+            chat_id,
+            receiver_user_id,
+            ephemeral_message_id,
+            media,
+        )
+        .erase()
+    }
+
+    fn edit_ephemeral_message_reply_markup(
+        &self,
+        chat_id: Recipient,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+    ) -> ErasedRequest<'a, EditEphemeralMessageReplyMarkup, Self::Err> {
+        Requester::edit_ephemeral_message_reply_markup(
+            self,
+            chat_id,
+            receiver_user_id,
+            ephemeral_message_id,
+        )
+        .erase()
+    }
+
     fn stop_poll(
         &self,
         chat_id: Recipient,
@@ -2352,6 +2458,16 @@ where
         message_id: MessageId,
     ) -> ErasedRequest<'a, DeleteMessage, Self::Err> {
         Requester::delete_message(self, chat_id, message_id).erase()
+    }
+
+    fn delete_ephemeral_message(
+        &self,
+        chat_id: Recipient,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+    ) -> ErasedRequest<'a, DeleteEphemeralMessage, Self::Err> {
+        Requester::delete_ephemeral_message(self, chat_id, receiver_user_id, ephemeral_message_id)
+            .erase()
     }
 
     fn delete_messages(

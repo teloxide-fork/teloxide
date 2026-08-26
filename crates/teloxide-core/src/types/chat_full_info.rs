@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::types::{
     AcceptedGiftTypes, Audio, Birthdate, BusinessIntro, BusinessLocation, BusinessOpeningHours,
-    Chat, ChatId, ChatLocation, ChatPermissions, ChatPhoto, Message, ReactionType, Seconds,
-    UniqueGiftColors, User, UserRating,
+    Chat, ChatId, ChatLocation, ChatPermissions, ChatPhoto, Community, Message, ReactionType,
+    Seconds, UniqueGiftColors, User, UserRating,
 };
 
 /// Custom emoji identifier.
@@ -119,6 +119,9 @@ pub struct ChatFullInfo {
     /// The bot that processes join request queries in the chat. The field is
     /// only available to chat administrators.
     pub guard_bot: Option<User>,
+
+    /// Information about the community to which the chat belongs.
+    pub community: Option<Community>,
 }
 
 #[serde_with::skip_serializing_none]
@@ -779,6 +782,7 @@ mod tests {
             has_visible_history: false,
             max_reaction_count: 0,
             guard_bot: None,
+            community: Some(Community { id: 1, name: "Rust".into() }),
         };
         let actual = from_str(
             r#"{
@@ -793,6 +797,7 @@ mod tests {
                 ],
                 "emoji_status_expiration_date": 1720708004,
                 "max_reaction_count": 0,
+                "community": {"id": 1, "name": "Rust"},
                 "accepted_gift_types": {
                     "unlimited_gifts": true,
                     "limited_gifts": true,
@@ -847,6 +852,7 @@ mod tests {
             has_visible_history: false,
             max_reaction_count: 0,
             guard_bot: None,
+            community: None,
         };
         eprintln!("{}", to_string(&chat).unwrap());
         assert_eq!(
@@ -913,6 +919,7 @@ mod tests {
             has_visible_history: false,
             max_reaction_count: 0,
             guard_bot: None,
+            community: None,
         };
 
         let json = to_string(&chat).unwrap();

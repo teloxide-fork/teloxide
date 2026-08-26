@@ -163,12 +163,23 @@ fn get_type(prop: &Value, initial_object_name: String) -> (bool, Kind) {
     let mut item_kind: Option<Kind> = None; // Used for arrays
     let mut string_enumeration: Vec<String> = vec![];
 
-    // Any of is usually either a Recipient or an optional field
+    // `anyOf` is usually either a Recipient, an optional field, or a union.
     if let Some(any_of) = prop.get("anyOf") {
         if let Some(array) = any_of.as_array() {
             let mut types_array = vec![];
+            let mut contains_null = false;
             for variant in array {
-                types_array.push(get_type(variant, initial_object_name.clone()).1);
+                let (variant_required, variant_type) =
+                    get_type(variant, initial_object_name.clone());
+                if !variant_required {
+                    required = false;
+                }
+                if matches!(variant_type, Kind::Null) {
+                    contains_null = true;
+                    required = false;
+                } else {
+                    types_array.push(variant_type);
+                }
             }
 
             // This is most likely Recipient with string/int type
@@ -198,20 +209,17 @@ fn get_type(prop: &Value, initial_object_name: String) -> (bool, Kind) {
                         ],
                     },
                 );
-            } else {
-                for variant_type in types_array.clone() {
-                    match variant_type {
-                        Kind::Null => required = false,
-                        Kind::Reference { reference } => {
-                            prop_type = Some(Type::Reference { reference })
-                        }
-                        unreachable_type => unreachable!(
-                            "Object `{initial_object_name}`: Nothing else should be in anyOf, the \
-                             type is {unreachable_type:?}, all types are: {types_array:?}"
-                        ),
-                    }
-                }
             }
+
+            return match types_array.len() {
+                0 if contains_null => (required, Kind::Null),
+                0 => (required, Kind::AnyOf { any_of: vec![] }),
+                1 => (required, types_array.pop().unwrap()),
+                _ => (
+                    required,
+                    Kind::AnyOf { any_of: types_array.into_iter().map(KindWrapper).collect() },
+                ),
+            };
         }
     } else if let Some(r) = prop.get("$ref") {
         if let Some(s) = r.as_str() {
@@ -321,6 +329,57 @@ fn get_type(prop: &Value, initial_object_name: String) -> (bool, Kind) {
     };
 
     (required, prop_kind)
+}
+
+fn kinds_compatible(rust_kind: &Kind, api_kind: &Kind) -> bool {
+    match (rust_kind, api_kind) {
+        (Kind::AnyOf { any_of: rust }, Kind::AnyOf { any_of: api }) => any_of_compatible(rust, api),
+        (Kind::Reference { reference: rust }, Kind::Reference { reference: api }) => rust == api,
+        (Kind::Array { array: rust }, Kind::Array { array: api }) => {
+            kinds_compatible(&rust.0, &api.0)
+        }
+        (Kind::String { enumeration: rust, .. }, Kind::String { enumeration: api, .. })
+            if !rust.is_empty() && !api.is_empty() =>
+        {
+            let mut rust = rust.clone();
+            let mut api = api.clone();
+            rust.sort();
+            api.sort();
+            rust == api
+        }
+        _ => std::mem::discriminant(rust_kind) == std::mem::discriminant(api_kind),
+    }
+}
+
+fn any_of_compatible(rust: &[KindWrapper], api: &[KindWrapper]) -> bool {
+    if rust.len() != api.len() {
+        return false;
+    }
+
+    fn matches_from(
+        rust: &[KindWrapper],
+        api: &[KindWrapper],
+        index: usize,
+        used: &mut [bool],
+    ) -> bool {
+        if index == rust.len() {
+            return true;
+        }
+
+        for (api_index, api_kind) in api.iter().enumerate() {
+            if !used[api_index] && kinds_compatible(&rust[index].0, &api_kind.0) {
+                used[api_index] = true;
+                if matches_from(rust, api, index + 1, used) {
+                    return true;
+                }
+                used[api_index] = false;
+            }
+        }
+
+        false
+    }
+
+    matches_from(rust, api, 0, &mut vec![false; api.len()])
 }
 
 fn parse_type(val: &Value) -> Type {
@@ -594,9 +653,18 @@ fn check_struct_kind(
     object_name: String,
     errors: &mut Vec<ApiCheckError>,
 ) {
-    // Basic check so that if one field is Bool, but is supposed to be an Integer it
-    // is caught
-    if std::mem::discriminant(rust_kind) != std::mem::discriminant(api_kind) {
+    if let (Kind::AnyOf { any_of: rust }, Kind::AnyOf { any_of: api }) = (rust_kind, api_kind) {
+        if !any_of_compatible(rust, api) {
+            errors.push(ApiCheckError::FieldTyDoesNotMatch {
+                object: object_name,
+                field: field_name,
+                raw_type: rust_kind.clone(),
+                actual_type: api_kind.clone(),
+            });
+        }
+    // Basic check so that if one field is Bool, but is supposed to be an
+    // Integer it is caught
+    } else if std::mem::discriminant(rust_kind) != std::mem::discriminant(api_kind) {
         errors.push(ApiCheckError::FieldTyDoesNotMatch {
             object: object_name,
             field: field_name,
@@ -788,6 +856,119 @@ mod tests {
         types::Message,
     };
     use schemars::schema_for;
+
+    #[derive(schemars::JsonSchema)]
+    struct TestAnimation {
+        id: String,
+    }
+
+    #[derive(schemars::JsonSchema)]
+    struct TestAudio {
+        id: String,
+    }
+
+    #[derive(schemars::JsonSchema)]
+    struct TestPhoto {
+        id: String,
+    }
+
+    #[derive(schemars::JsonSchema)]
+    struct TestVideo {
+        id: String,
+    }
+
+    #[derive(schemars::JsonSchema)]
+    struct TestVoiceNote {
+        id: String,
+    }
+
+    #[derive(schemars::JsonSchema)]
+    #[schemars(inline, untagged)]
+    enum ReversedMedia {
+        VoiceNote(TestVoiceNote),
+        Video(TestVideo),
+        Photo(TestPhoto),
+        Audio(TestAudio),
+        Animation(TestAnimation),
+    }
+
+    #[derive(schemars::JsonSchema)]
+    struct AnyOfHolder {
+        media: ReversedMedia,
+    }
+
+    #[derive(schemars::JsonSchema)]
+    #[schemars(inline, untagged)]
+    enum MissingMedia {
+        VoiceNote(TestVoiceNote),
+        Video(TestVideo),
+        Photo(TestPhoto),
+        Audio(TestAudio),
+    }
+
+    #[derive(schemars::JsonSchema)]
+    struct MissingAnyOfHolder {
+        media: MissingMedia,
+    }
+
+    fn any_of_schema() -> ApiSchema {
+        ApiSchema {
+            version: Version { major: 0, minor: 0, patch: 0 },
+            recent_changes: Date { year: 1970, month: 1, day: 1 },
+            methods: vec![],
+            objects: vec![Object {
+                name: "AnyOfHolder".to_owned(),
+                description: String::new(),
+                data: ObjectData::Properties {
+                    properties: vec![Property {
+                        name: "media".to_owned(),
+                        description: String::new(),
+                        required: true,
+                        kind: KindWrapper(Kind::AnyOf {
+                            any_of: [
+                                "TestAnimation",
+                                "TestAudio",
+                                "TestPhoto",
+                                "TestVideo",
+                                "TestVoiceNote",
+                            ]
+                            .into_iter()
+                            .map(|reference| {
+                                KindWrapper(Kind::Reference { reference: reference.to_owned() })
+                            })
+                            .collect(),
+                        }),
+                    }],
+                },
+                documentation_link: String::new(),
+            }],
+        }
+    }
+
+    #[test]
+    fn any_of_members_are_order_independent_and_complete() {
+        let exceptions = Exceptions::new(vec![]);
+
+        let mut errors = vec![];
+        check_object(
+            any_of_schema(),
+            schema_for!(AnyOfHolder),
+            "AnyOfHolder".to_owned(),
+            &mut errors,
+            &exceptions,
+        );
+        assert!(errors.is_empty(), "{errors:?}");
+
+        let mut errors = vec![];
+        check_object(
+            any_of_schema(),
+            schema_for!(MissingAnyOfHolder),
+            "AnyOfHolder".to_owned(),
+            &mut errors,
+            &exceptions,
+        );
+        assert!(matches!(errors.as_slice(), [ApiCheckError::FieldTyDoesNotMatch { .. }]));
+    }
 
     // Purely for manual testing
     #[test]

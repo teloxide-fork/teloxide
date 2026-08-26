@@ -188,7 +188,9 @@ fn partial_eq_suitable(method: &Method) -> bool {
     fn ty_partial_eq_suitable(ty: &Type) -> bool {
         match ty {
             Type::Option(inner) | Type::ArrayOf(inner) => ty_partial_eq_suitable(&*inner),
-            Type::RawTy(raw) => raw != "InputPollMedia",
+            Type::RawTy(raw) => {
+                raw != "InputMedia" && raw != "InputPollMedia" && raw != "InputRichMessage"
+            }
             _ => true,
         }
     }
@@ -215,7 +217,9 @@ fn eq_hash_suitable(method: &Method) -> bool {
             Type::Url | Type::DateTime => true,
 
             Type::RawTy(raw) => {
-                raw != "InputPollMedia"
+                raw != "InputMedia"
+                    && raw != "InputPollMedia"
+                    && raw != "InputRichMessage"
                     && raw != "InputSticker"
                     && raw != "MaskPosition"
                     && raw != "InlineQueryResult"
@@ -243,7 +247,9 @@ fn params(params: impl Iterator<Item = impl Borrow<Param>>) -> String {
                      \"crate::types::serialize_reply_to_message_id\")]"
                 }
                 Type::RawTy(s)
-                    if s == "MessageId" || s == "TargetMessage" || s == "StickerType" =>
+                    if (s == "MessageId" && field == "message_id")
+                        || s == "TargetMessage"
+                        || s == "StickerType" =>
                 {
                     "\n            #[serde(flatten)]"
                 }
@@ -253,6 +259,9 @@ fn params(params: impl Iterator<Item = impl Borrow<Param>>) -> String {
                 _ => "",
             };
             let with = match ty {
+                Type::RawTy(s) if s == "MessageId" && field == "ephemeral_message_id" => {
+                    "\n            #[serde(with = \"crate::types::msg_id_as_int\")]"
+                }
                 Type::DateTime => {
                     "\n            #[serde(with = \
                      \"crate::types::serde_opt_date_from_unix_timestamp\")]"
@@ -274,8 +283,16 @@ fn params(params: impl Iterator<Item = impl Borrow<Param>>) -> String {
 }
 
 fn multipart_input_file_fields(m: &Method) -> Option<Vec<&str>> {
-    let fields: Vec<_> =
-        m.params.iter().filter(|&p| ty_is_multiparty(&p.ty)).map(|p| &*p.name).collect();
+    let fields: Vec<_> = m
+        .params
+        .iter()
+        .filter(|p| {
+            ty_is_multiparty(&p.ty)
+                || (m.names.1 == "EditEphemeralMessageMedia"
+                    && matches!(&p.ty, Type::RawTy(ty) if ty == "InputMedia"))
+        })
+        .map(|p| &*p.name)
+        .collect();
 
     if fields.is_empty() {
         None
@@ -285,6 +302,6 @@ fn multipart_input_file_fields(m: &Method) -> Option<Vec<&str>> {
 }
 
 fn ty_is_multiparty(ty: &Type) -> bool {
-    matches!(ty, Type::RawTy(x) if x == "InputFile" || x == "InputSticker")
+    matches!(ty, Type::RawTy(x) if x == "InputFile" || x == "InputSticker" || x == "InputRichMessage")
         || matches!(ty, Type::Option(inner) if ty_is_multiparty(inner))
 }

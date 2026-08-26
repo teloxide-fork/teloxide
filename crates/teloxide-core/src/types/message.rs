@@ -90,6 +90,14 @@ pub struct Message {
     /// Chat that sent the message on behalf of the guest bot.
     pub guest_bot_caller_chat: Option<Chat>,
 
+    /// The user who can receive an ephemeral message.
+    pub receiver_user: Option<User>,
+
+    /// Unique identifier of an ephemeral message.
+    #[serde(default, with = "crate::types::option_msg_id_as_int")]
+    #[cfg_attr(test, schemars(with = "Option<i32>"))]
+    pub ephemeral_message_id: Option<MessageId>,
+
     #[serde(flatten)]
     pub kind: MessageKind,
 }
@@ -148,6 +156,8 @@ pub enum MessageKind {
     GiftInfo(MessageGiftInfo),
     GiftUpgradeSent(MessageGiftUpgradeSent),
     ManagedBotCreated(MessageManagedBotCreated),
+    CommunityChatAdded(MessageCommunityChatAdded),
+    CommunityChatRemoved(MessageCommunityChatRemoved),
     PollOptionAdded(MessagePollOptionAdded),
     PollOptionDeleted(MessagePollOptionDeleted),
     UniqueGiftInfo(MessageUniqueGiftInfo),
@@ -1030,6 +1040,22 @@ pub struct MessageGiftUpgradeSent {
 pub struct MessageManagedBotCreated {
     /// Service message: a managed bot was created
     pub managed_bot_created: ManagedBotCreated,
+}
+
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+pub struct MessageCommunityChatAdded {
+    /// Service message: the chat was added to a community.
+    pub community_chat_added: crate::types::CommunityChatAdded,
+}
+
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+pub struct MessageCommunityChatRemoved {
+    /// Service message: the chat was removed from a community.
+    pub community_chat_removed: crate::types::CommunityChatRemoved,
 }
 
 #[serde_with::skip_serializing_none]
@@ -2495,6 +2521,7 @@ impl Message {
 
         self.from
             .iter()
+            .chain(self.receiver_user.iter())
             .chain(self.via_bot.as_ref())
             .chain(flatten(self.reply_to_message().map(Self::mentioned_users_rec)))
             .chain(flatten(self.new_chat_members()))
@@ -2536,6 +2563,34 @@ mod tests {
     use chrono::DateTime;
     use cool_asserts::assert_matches;
     use serde_json::from_str;
+
+    #[test]
+    fn deserializes_ephemeral_and_community_fields() {
+        let added: Message = from_str(
+            r#"{
+                "message_id": 1, "date": 0,
+                "chat": {"id": 1, "first_name": "A", "type": "private"},
+                "receiver_user": {"id": 2, "is_bot": false, "first_name": "B"},
+                "ephemeral_message_id": 3,
+                "community_chat_added": {"community": {"id": 4, "name": "Rust"}}
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(added.receiver_user.unwrap().id.0, 2);
+        assert_eq!(added.ephemeral_message_id, Some(MessageId(3)));
+        assert!(matches!(added.kind, MessageKind::CommunityChatAdded(_)));
+
+        let removed: Message = from_str(
+            r#"{
+                "message_id": 1, "date": 0,
+                "chat": {"id": 1, "first_name": "A", "type": "private"},
+                "community_chat_removed": {}
+            }"#,
+        )
+        .unwrap();
+        assert!(matches!(removed.kind, MessageKind::CommunityChatRemoved(_)));
+        assert_eq!(removed.ephemeral_message_id, None);
+    }
 
     use crate::types::*;
 
@@ -2650,6 +2705,8 @@ mod tests {
                 guest_query_id: None,
                 guest_bot_caller_user: None,
                 guest_bot_caller_chat: None,
+                receiver_user: None,
+                ephemeral_message_id: None,
                 kind: MessageKind::ChatShared(MessageChatShared {
                     chat_shared: ChatShared {
                         request_id: RequestId(348349),
@@ -3277,6 +3334,8 @@ mod tests {
                     guest_query_id: None,
                     guest_bot_caller_user: None,
                     guest_bot_caller_chat: None,
+                    receiver_user: None,
+                    ephemeral_message_id: None,
                     suggested_post_info: None,
                     kind: MessageKind::Giveaway(MessageGiveaway {
                         giveaway: Giveaway {

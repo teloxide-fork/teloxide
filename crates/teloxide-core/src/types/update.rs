@@ -3,9 +3,9 @@ use serde::{de::MapAccess, Deserialize, Serialize, Serializer};
 use serde_json::Value;
 
 use crate::types::{
-    BusinessConnection, BusinessMessagesDeleted, CallbackQuery, Chat, ChatBoostRemoved,
-    ChatBoostUpdated, ChatJoinRequest, ChatMemberUpdated, ChosenInlineResult, InlineQuery,
-    ManagedBotUpdated, Message, MessageReactionCountUpdated, MessageReactionUpdated,
+    BotSubscriptionUpdated, BusinessConnection, BusinessMessagesDeleted, CallbackQuery, Chat,
+    ChatBoostRemoved, ChatBoostUpdated, ChatJoinRequest, ChatMemberUpdated, ChosenInlineResult,
+    InlineQuery, ManagedBotUpdated, Message, MessageReactionCountUpdated, MessageReactionUpdated,
     PaidMediaPurchased, Poll, PollAnswer, PreCheckoutQuery, ShippingQuery, User,
 };
 
@@ -161,6 +161,9 @@ pub enum UpdateKind {
     /// a managed bot was changed
     ManagedBot(ManagedBotUpdated),
 
+    /// A bot subscription state was updated.
+    Subscription(BotSubscriptionUpdated),
+
     /// An error that happened during deserialization.
     ///
     /// This allows `teloxide` to continue working even if telegram adds a new
@@ -206,6 +209,7 @@ impl Update {
             ChatBoost(b) => return b.boost.source.user(),
             RemovedChatBoost(b) => return b.source.user(),
             ManagedBot(u) => &u.user,
+            Subscription(u) => &u.user,
 
             MessageReactionCount(_) | DeletedBusinessMessages(_) | Poll(_) | Error(_) => {
                 return None
@@ -299,6 +303,7 @@ impl Update {
                 i5(empty())
             }
             UpdateKind::ManagedBot(u) => i1(once(&u.user)),
+            UpdateKind::Subscription(u) => i1(once(&u.user)),
 
             UpdateKind::ChatJoinRequest(_)
             | UpdateKind::MessageReactionCount(_)
@@ -340,6 +345,7 @@ impl Update {
             | Poll(_)
             | PollAnswer(_)
             | ManagedBot(_)
+            | Subscription(_)
             | Error(_) => return None,
         };
 
@@ -472,6 +478,10 @@ impl<'de> Deserialize<'de> for UpdateKind {
                         "managed_bot" => {
                             map.next_value::<ManagedBotUpdated>().ok().map(UpdateKind::ManagedBot)
                         }
+                        "subscription" => map
+                            .next_value::<BotSubscriptionUpdated>()
+                            .ok()
+                            .map(UpdateKind::Subscription),
                         _ => Some(empty_error()),
                     })
                     .unwrap_or_else(empty_error);
@@ -550,6 +560,7 @@ impl Serialize for UpdateKind {
                 s.serialize_newtype_variant(name, 22, "removed_chat_boost", v)
             }
             UpdateKind::ManagedBot(v) => s.serialize_newtype_variant(name, 23, "managed_bot", v),
+            UpdateKind::Subscription(v) => s.serialize_newtype_variant(name, 25, "subscription", v),
             UpdateKind::Error(v) => v.serialize(s),
         }
     }
@@ -572,6 +583,15 @@ mod test {
 
     use chrono::DateTime;
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn deserializes_subscription_update() {
+        let update: Update = serde_json::from_str(
+            r#"{"update_id":1,"subscription":{"user":{"id":1,"is_bot":false,"first_name":"A"},"invoice_payload":"p","state":"active"}}"#,
+        )
+        .unwrap();
+        assert!(matches!(update.kind, UpdateKind::Subscription(_)));
+    }
 
     // TODO: more tests for deserialization
     #[test]
@@ -640,6 +660,8 @@ mod test {
                 guest_query_id: None,
                 guest_bot_caller_user: None,
                 guest_bot_caller_chat: None,
+                receiver_user: None,
+                ephemeral_message_id: None,
                 direct_messages_topic: None,
                 kind: MessageKind::Common(MessageCommon {
                     reply_to_message: None,

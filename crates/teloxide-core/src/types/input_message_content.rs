@@ -684,6 +684,8 @@ mod tests {
                 rich_message: InputRichMessage {
                     html: Some("<b>hi</b>".to_owned()),
                     markdown: None,
+                    blocks: None,
+                    media: None,
                     is_rtl: None,
                     skip_entity_detection: None,
                 },
@@ -693,13 +695,6 @@ mod tests {
         assert_eq!(expected_json, actual_json);
     }
 
-    /// Round-trip (serialize → deserialize) across all 6 `InputMessageContent`
-    /// variants — guards the untagged-enum insertion of `RichMessage` against
-    /// shadowing/being-shadowed-by adjacent variants, and confirms the
-    /// `Venue`-before-`Location` ordering fix resolves `Venue` payloads
-    /// correctly (previously a pre-existing, unrelated bug: `Location`
-    /// appeared first and `Venue`'s required fields are a superset of
-    /// `Location`'s, so untagged resolution always picked `Location` first).
     #[test]
     fn round_trip_all_variants() {
         let variants = vec![
@@ -718,6 +713,8 @@ mod tests {
                 rich_message: InputRichMessage {
                     html: Some("<b>hi</b>".to_owned()),
                     markdown: None,
+                    blocks: None,
+                    media: None,
                     is_rtl: None,
                     skip_entity_detection: None,
                 },

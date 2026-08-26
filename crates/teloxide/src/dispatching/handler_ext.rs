@@ -204,6 +204,8 @@ mod tests {
                 guest_query_id: None,
                 guest_bot_caller_user: None,
                 guest_bot_caller_chat: None,
+                receiver_user: None,
+                ephemeral_message_id: None,
                 date,
                 chat: Chat {
                     id: ChatId(109_998_024),

@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added support for Telegram Bot API 10.2 [**BC**]
+  - Rich-message input, ephemeral messages, communities, and subscription updates
+  - See [its changelog](crates/teloxide-core/CHANGELOG.md) for more information
 - Added support for Telegram Bot API 10.1 [**BC**]
 - Added support for Telegram Bot API 10.0
 - Added support for Telegram Bot API 9.6

@@ -8,11 +8,19 @@ use crate::types::{ChecklistTaskId, MessageEntity, MessageId, Recipient};
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 pub struct ReplyParameters {
     /// Identifier of the message that will be replied to in the current chat,
-    /// or in the chat _chat\_id_ if it is specified
+    /// or in the chat _chat\_id_ if it is specified. Exactly one of this field
+    /// and [`ephemeral_message_id`](Self::ephemeral_message_id) is required by
+    /// Telegram.
     // Issue https://github.com/teloxide/teloxide/issues/1135
-    #[serde(with = "crate::types::msg_id_as_int")]
-    #[cfg_attr(test, schemars(with = "i32"))]
-    pub message_id: MessageId,
+    #[serde(default, with = "crate::types::option_msg_id_as_int")]
+    #[cfg_attr(test, schemars(with = "Option<i32>"))]
+    pub message_id: Option<MessageId>,
+    /// Identifier of the ephemeral message that will be replied to. Exactly one
+    /// of this field and [`message_id`](Self::message_id) is required by
+    /// Telegram.
+    #[serde(default, with = "crate::types::option_msg_id_as_int")]
+    #[cfg_attr(test, schemars(with = "Option<i32>"))]
+    pub ephemeral_message_id: Option<MessageId>,
     /// If the message to be replied to is from a different chat, unique
     /// identifier for the chat or username of the channel (in the format
     /// `@channelusername`). Not supported for messages sent on behalf of a
@@ -48,7 +56,11 @@ pub struct ReplyParameters {
 
 impl ReplyParameters {
     pub fn new(message_id: MessageId) -> Self {
-        Self { message_id, ..Self::default() }
+        Self { message_id: Some(message_id), ..Self::default() }
+    }
+
+    pub fn new_ephemeral(ephemeral_message_id: MessageId) -> Self {
+        Self { ephemeral_message_id: Some(ephemeral_message_id), ..Self::default() }
     }
 
     /// Setter for the `chat_id` field
@@ -79,5 +91,32 @@ impl ReplyParameters {
     pub fn poll_option_id(mut self, poll_option_id: String) -> Self {
         self.poll_option_id = Some(poll_option_id);
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn serializes_ordinary_and_ephemeral_reply_identifiers() {
+        let ordinary = ReplyParameters::new(MessageId(42));
+        let ordinary_json = serde_json::to_value(&ordinary).unwrap();
+        assert_eq!(ordinary_json["message_id"], 42);
+        assert_eq!(serde_json::from_value::<ReplyParameters>(ordinary_json).unwrap(), ordinary);
+
+        let ephemeral = ReplyParameters::new_ephemeral(MessageId(7));
+        let ephemeral_json = serde_json::to_value(&ephemeral).unwrap();
+        assert_eq!(ephemeral_json["ephemeral_message_id"], 7);
+        assert_eq!(serde_json::from_value::<ReplyParameters>(ephemeral_json).unwrap(), ephemeral);
+
+        // A JSON object with only `message_id` (missing `ephemeral_message_id`)
+        // must still deserialize, with `ephemeral_message_id` defaulting to `None`.
+        let partial: ReplyParameters = serde_json::from_value(serde_json::json!({
+            "message_id": 42
+        }))
+        .unwrap();
+        assert_eq!(partial.message_id, Some(MessageId(42)));
+        assert_eq!(partial.ephemeral_message_id, None);
     }
 }

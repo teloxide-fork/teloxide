@@ -4,7 +4,8 @@ use url::Url;
 
 use crate::{
     payloads::{
-        AnswerInlineQuery, AnswerWebAppQuery, CopyMessage, EditMessageCaption,
+        AnswerInlineQuery, AnswerWebAppQuery, CopyMessage, EditEphemeralMessageCaption,
+        EditEphemeralMessageMedia, EditEphemeralMessageText, EditMessageCaption,
         EditMessageCaptionInline, EditMessageChecklist, EditMessageMedia, EditMessageMediaInline,
         EditMessageText, EditMessageTextInline, EditStory, GiftPremiumSubscription, PostStory,
         SavePreparedInlineMessage, SendAnimation, SendAudio, SendChecklist, SendDocument, SendGift,
@@ -148,6 +149,9 @@ where
     B::EditMessageTextInline: Clone,
     B::EditMessageCaption: Clone,
     B::EditMessageCaptionInline: Clone,
+    B::EditEphemeralMessageText: Clone,
+    B::EditEphemeralMessageCaption: Clone,
+    B::EditEphemeralMessageMedia: Clone,
     B::SendPoll: Clone,
     B::SendChecklist: Clone,
     B::CopyMessage: Clone,
@@ -183,6 +187,9 @@ where
         edit_message_text_inline,
         edit_message_caption,
         edit_message_caption_inline,
+        edit_ephemeral_message_text,
+        edit_ephemeral_message_caption,
+        edit_ephemeral_message_media,
         edit_message_checklist,
         copy_message,
         post_story,
@@ -296,10 +303,12 @@ where
         delete_my_commands,
         edit_message_reply_markup,
         edit_message_reply_markup_inline,
+        edit_ephemeral_message_reply_markup,
         stop_poll,
         approve_suggested_post,
         decline_suggested_post,
         delete_message,
+        delete_ephemeral_message,
         delete_messages,
         delete_message_reaction,
         delete_all_message_reactions,
@@ -413,6 +422,8 @@ impl_visit_parse_modes! {
     EditMessageTextInline => [parse_mode],
     EditMessageCaption => [parse_mode],
     EditMessageCaptionInline => [parse_mode],
+    EditEphemeralMessageText => [parse_mode],
+    EditEphemeralMessageCaption => [parse_mode],
     SendPaidMedia => [parse_mode],
     GiftPremiumSubscription => [text_parse_mode],
     SendGift => [text_parse_mode],
@@ -485,6 +496,12 @@ impl VisitParseModes for EditMessageMedia {
 }
 
 impl VisitParseModes for EditMessageMediaInline {
+    fn visit_parse_modes(&mut self, mut visitor: impl FnMut(&mut Option<ParseMode>)) {
+        visit_parse_modes_in_input_media(&mut self.media, &mut visitor);
+    }
+}
+
+impl VisitParseModes for EditEphemeralMessageMedia {
     fn visit_parse_modes(&mut self, mut visitor: impl FnMut(&mut Option<ParseMode>)) {
         visit_parse_modes_in_input_media(&mut self.media, &mut visitor);
     }
@@ -567,6 +584,7 @@ fn visit_parse_modes_in_input_media(
         Audio(m) => &mut m.parse_mode,
         Document(m) => &mut m.parse_mode,
         LivePhoto(m) => &mut m.parse_mode,
+        VoiceNote(m) => &mut m.parse_mode,
     };
 
     visitor(parse_mode);
@@ -773,5 +791,17 @@ mod tests {
             panic!("expected video poll media");
         };
         assert_eq!(media.parse_mode, None);
+    }
+
+    #[test]
+    fn visits_voice_note_caption_parse_mode() {
+        let mut media = InputMedia::VoiceNote(InputMediaVoiceNote::new(media()));
+
+        visit_parse_modes_in_input_media(&mut media, &mut set_default_parse_mode);
+
+        let InputMedia::VoiceNote(voice_note) = media else {
+            panic!("expected voice note");
+        };
+        assert_eq!(voice_note.parse_mode, Some(ParseMode::Html));
     }
 }

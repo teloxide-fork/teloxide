@@ -5,8 +5,9 @@ use serde::Serialize;
 use crate::types::{ChatId, InputRichMessage, ThreadId, True};
 
 impl_payload! {
+    @[multipart = rich_message]
     /// Use this method to stream a partial rich message to a user while the message is being generated. On success, _True_ is returned.
-    #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize)]
+    #[derive(Debug, Clone, Serialize)]
     pub SendRichMessageDraft (SendRichMessageDraftSetters) => True {
         required {
             /// Unique identifier for the target private chat

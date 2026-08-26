@@ -7,12 +7,13 @@ use crate::types::{
 };
 
 impl_payload! {
+    @[multipart = rich_message]
     /// Use this method to edit text and [games] messages. On success, _True_ is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within **48 hours** from the time they were sent.
     ///
     /// See also: [`EditMessageText`](crate::payloads::EditMessageText)
     ///
     /// [games]: https://core.telegram.org/bots/api#games
-    #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize)]
+    #[derive(Debug, Clone, Serialize)]
     pub EditMessageTextInline (EditMessageTextInlineSetters) => True {
         required {
             /// Identifier of the inline message

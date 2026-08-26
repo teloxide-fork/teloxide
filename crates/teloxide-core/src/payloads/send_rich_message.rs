@@ -8,10 +8,11 @@ use crate::types::{
 };
 
 impl_payload! {
+    @[multipart = rich_message]
     /// Use this method to send rich messages. If the message contains a block with a media element, the bot must have the right to send that media to the chat. On success, the sent [`Message`] is returned.
     ///
     /// [`Message`]: crate::types::Message
-    #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize)]
+    #[derive(Debug, Clone, Serialize)]
     pub SendRichMessage (SendRichMessageSetters) => Message {
         required {
             /// Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)

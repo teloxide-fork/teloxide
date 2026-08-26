@@ -70,7 +70,7 @@ impl Requester for Bot {
         )
     }
 
-    type SendRichMessage = JsonRequest<payloads::SendRichMessage>;
+    type SendRichMessage = MultipartRequest<payloads::SendRichMessage>;
 
     fn send_rich_message<C>(
         &self,
@@ -86,7 +86,7 @@ impl Requester for Bot {
         )
     }
 
-    type SendRichMessageDraft = JsonRequest<payloads::SendRichMessageDraft>;
+    type SendRichMessageDraft = MultipartRequest<payloads::SendRichMessageDraft>;
 
     fn send_rich_message_draft<C>(
         &self,
@@ -1301,7 +1301,7 @@ impl Requester for Bot {
         )
     }
 
-    type EditMessageText = JsonRequest<payloads::EditMessageText>;
+    type EditMessageText = MultipartRequest<payloads::EditMessageText>;
 
     fn edit_message_text<C>(&self, chat_id: C, message_id: MessageId) -> Self::EditMessageText
     where
@@ -1313,7 +1313,7 @@ impl Requester for Bot {
         )
     }
 
-    type EditMessageTextInline = JsonRequest<payloads::EditMessageTextInline>;
+    type EditMessageTextInline = MultipartRequest<payloads::EditMessageTextInline>;
 
     fn edit_message_text_inline<I>(&self, inline_message_id: I) -> Self::EditMessageTextInline
     where
@@ -1413,6 +1413,95 @@ impl Requester for Bot {
         )
     }
 
+    type EditEphemeralMessageText = JsonRequest<payloads::EditEphemeralMessageText>;
+
+    fn edit_ephemeral_message_text<C, T>(
+        &self,
+        chat_id: C,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+        text: T,
+    ) -> Self::EditEphemeralMessageText
+    where
+        C: Into<Recipient>,
+        T: Into<String>,
+    {
+        Self::EditEphemeralMessageText::new(
+            self.clone(),
+            payloads::EditEphemeralMessageText::new(
+                chat_id,
+                receiver_user_id,
+                ephemeral_message_id,
+                text,
+            ),
+        )
+    }
+
+    type EditEphemeralMessageCaption = JsonRequest<payloads::EditEphemeralMessageCaption>;
+
+    fn edit_ephemeral_message_caption<C>(
+        &self,
+        chat_id: C,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+    ) -> Self::EditEphemeralMessageCaption
+    where
+        C: Into<Recipient>,
+    {
+        Self::EditEphemeralMessageCaption::new(
+            self.clone(),
+            payloads::EditEphemeralMessageCaption::new(
+                chat_id,
+                receiver_user_id,
+                ephemeral_message_id,
+            ),
+        )
+    }
+
+    type EditEphemeralMessageMedia = MultipartRequest<payloads::EditEphemeralMessageMedia>;
+
+    fn edit_ephemeral_message_media<C>(
+        &self,
+        chat_id: C,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+        media: InputMedia,
+    ) -> Self::EditEphemeralMessageMedia
+    where
+        C: Into<Recipient>,
+    {
+        Self::EditEphemeralMessageMedia::new(
+            self.clone(),
+            payloads::EditEphemeralMessageMedia::new(
+                chat_id,
+                receiver_user_id,
+                ephemeral_message_id,
+                media,
+            ),
+        )
+    }
+
+    type EditEphemeralMessageReplyMarkup = JsonRequest<payloads::EditEphemeralMessageReplyMarkup>;
+
+    fn edit_ephemeral_message_reply_markup<C>(
+        &self,
+        chat_id: C,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+    ) -> Self::EditEphemeralMessageReplyMarkup
+    where
+        C: Into<Recipient>,
+    {
+        Self::EditEphemeralMessageReplyMarkup::new(
+            self.clone(),
+            payloads::EditEphemeralMessageReplyMarkup::new(
+                chat_id,
+                receiver_user_id,
+                ephemeral_message_id,
+            ),
+        )
+    }
+
     type StopPoll = JsonRequest<payloads::StopPoll>;
 
     fn stop_poll<C>(&self, chat_id: C, message_id: MessageId) -> Self::StopPoll
@@ -1461,6 +1550,23 @@ impl Requester for Bot {
         C: Into<Recipient>,
     {
         Self::DeleteMessage::new(self.clone(), payloads::DeleteMessage::new(chat_id, message_id))
+    }
+
+    type DeleteEphemeralMessage = JsonRequest<payloads::DeleteEphemeralMessage>;
+
+    fn delete_ephemeral_message<C>(
+        &self,
+        chat_id: C,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+    ) -> Self::DeleteEphemeralMessage
+    where
+        C: Into<Recipient>,
+    {
+        Self::DeleteEphemeralMessage::new(
+            self.clone(),
+            payloads::DeleteEphemeralMessage::new(chat_id, receiver_user_id, ephemeral_message_id),
+        )
     }
 
     type DeleteMessages = JsonRequest<payloads::DeleteMessages>;

@@ -1223,6 +1223,63 @@ pub trait Requester {
     where
         I: Into<String>;
 
+    type EditEphemeralMessageText: Request<Payload = EditEphemeralMessageText, Err = Self::Err>;
+
+    /// For Telegram documentation see [`EditEphemeralMessageText`].
+    fn edit_ephemeral_message_text<C, T>(
+        &self,
+        chat_id: C,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+        text: T,
+    ) -> Self::EditEphemeralMessageText
+    where
+        C: Into<Recipient>,
+        T: Into<String>;
+
+    type EditEphemeralMessageCaption: Request<
+        Payload = EditEphemeralMessageCaption,
+        Err = Self::Err,
+    >;
+
+    /// For Telegram documentation see [`EditEphemeralMessageCaption`].
+    fn edit_ephemeral_message_caption<C>(
+        &self,
+        chat_id: C,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+    ) -> Self::EditEphemeralMessageCaption
+    where
+        C: Into<Recipient>;
+
+    type EditEphemeralMessageMedia: Request<Payload = EditEphemeralMessageMedia, Err = Self::Err>;
+
+    /// For Telegram documentation see [`EditEphemeralMessageMedia`].
+    fn edit_ephemeral_message_media<C>(
+        &self,
+        chat_id: C,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+        media: InputMedia,
+    ) -> Self::EditEphemeralMessageMedia
+    where
+        C: Into<Recipient>;
+
+    type EditEphemeralMessageReplyMarkup: Request<
+        Payload = EditEphemeralMessageReplyMarkup,
+        Err = Self::Err,
+    >;
+
+    /// For Telegram documentation see [`EditEphemeralMessageReplyMarkup`].
+    fn edit_ephemeral_message_reply_markup<C>(
+        &self,
+        chat_id: C,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+    ) -> Self::EditEphemeralMessageReplyMarkup
+    where
+        C: Into<Recipient>;
+
     type StopPoll: Request<Payload = StopPoll, Err = Self::Err>;
 
     /// For Telegram documentation see [`StopPoll`].
@@ -1256,6 +1313,18 @@ pub trait Requester {
 
     /// For Telegram documentation see [`DeleteMessage`].
     fn delete_message<C>(&self, chat_id: C, message_id: MessageId) -> Self::DeleteMessage
+    where
+        C: Into<Recipient>;
+
+    type DeleteEphemeralMessage: Request<Payload = DeleteEphemeralMessage, Err = Self::Err>;
+
+    /// For Telegram documentation see [`DeleteEphemeralMessage`].
+    fn delete_ephemeral_message<C>(
+        &self,
+        chat_id: C,
+        receiver_user_id: i64,
+        ephemeral_message_id: MessageId,
+    ) -> Self::DeleteEphemeralMessage
     where
         C: Into<Recipient>;
 
@@ -1964,10 +2033,15 @@ macro_rules! forward_all {
             edit_message_media_inline,
             edit_message_reply_markup,
             edit_message_reply_markup_inline,
+            edit_ephemeral_message_text,
+            edit_ephemeral_message_caption,
+            edit_ephemeral_message_media,
+            edit_ephemeral_message_reply_markup,
             stop_poll,
             approve_suggested_post,
             decline_suggested_post,
             delete_message,
+            delete_ephemeral_message,
             delete_messages,
             delete_message_reaction,
             delete_all_message_reactions,

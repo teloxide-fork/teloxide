@@ -40,7 +40,7 @@
 //! [github]: https://github.com/WaffleLapkin/tg-methods-schema
 
 Schema(
-    api_version: ApiVersion(ver: "10.1", date: "June 11, 2026"),
+    api_version: ApiVersion(ver: "10.2", date: "July 14, 2026"),
     methods: [
         Method(
             names: ("getUpdates", "GetUpdates", "get_updates"),
@@ -234,6 +234,16 @@ Schema(
                     name: "chat_id",
                     ty: RawTy("Recipient"),
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)")
+                ),
+                Param(
+                    name: "receiver_user_id",
+                    ty: Option(i64),
+                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
+                ),
+                Param(
+                    name: "callback_query_id",
+                    ty: Option(String),
+                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -774,6 +784,16 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)")
                 ),
                 Param(
+                    name: "receiver_user_id",
+                    ty: Option(i64),
+                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
+                ),
+                Param(
+                    name: "callback_query_id",
+                    ty: Option(String),
+                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                ),
+                Param(
                     name: "message_thread_id",
                     ty: Option(RawTy("ThreadId")),
                     descr: Doc(md: "Unique identifier for the target message thread (topic) of the forum; for forum supergroups only"),
@@ -874,6 +894,8 @@ Schema(
             params: [
                 Param(name: "business_connection_id", ty: Option(RawTy("BusinessConnectionId")), descr: Doc(md: "Unique identifier of the business connection on behalf of which the message will be sent")),
                 Param(name: "chat_id", ty: RawTy("Recipient"), descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)")),
+                Param(name: "receiver_user_id", ty: Option(i64), descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message")),
+                Param(name: "callback_query_id", ty: Option(String), descr: Doc(md: "Unique identifier of the callback query to which the message is a response")),
                 Param(name: "message_thread_id", ty: Option(RawTy("ThreadId")), descr: Doc(md: "Unique identifier for the target message thread (topic) of a forum; for forum supergroups and private chats of bots with forum topic mode enabled only")),
                 Param(name: "direct_messages_topic_id", ty: Option(RawTy("TopicId")), descr: Doc(md: "Identifier of the direct messages topic to which the message will be sent; required if the message is sent to a direct messages chat")),
                 Param(name: "live_photo", ty: RawTy("InputFile"), descr: Doc(md: "Live photo video to send. The video must be no longer than 10 seconds and must not exceed 10 MB in size. Pass a file_id as String to send a video that exists on the Telegram servers (recommended) or upload a new video using multipart/form-data. [More information on Sending Files »] Sending live photos by a URL is currently unsupported.", md_links: {"More information on Sending Files »": "https://core.telegram.org/bots/api#sending-files"})),
@@ -914,6 +936,16 @@ Schema(
                     name: "chat_id",
                     ty: RawTy("Recipient"),
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)"),
+                ),
+                Param(
+                    name: "receiver_user_id",
+                    ty: Option(i64),
+                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
+                ),
+                Param(
+                    name: "callback_query_id",
+                    ty: Option(String),
+                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -1041,6 +1073,16 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)"),
                 ),
                 Param(
+                    name: "receiver_user_id",
+                    ty: Option(i64),
+                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
+                ),
+                Param(
+                    name: "callback_query_id",
+                    ty: Option(String),
+                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                ),
+                Param(
                     name: "message_thread_id",
                     ty: Option(RawTy("ThreadId")),
                     descr: Doc(md: "Unique identifier for the target message thread (topic) of the forum; for forum supergroups only"),
@@ -1157,6 +1199,16 @@ Schema(
                     name: "chat_id",
                     ty: RawTy("Recipient"),
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)"),
+                ),
+                Param(
+                    name: "receiver_user_id",
+                    ty: Option(i64),
+                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
+                ),
+                Param(
+                    name: "callback_query_id",
+                    ty: Option(String),
+                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -1313,6 +1365,16 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)"),
                 ),
                 Param(
+                    name: "receiver_user_id",
+                    ty: Option(i64),
+                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
+                ),
+                Param(
+                    name: "callback_query_id",
+                    ty: Option(String),
+                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                ),
+                Param(
                     name: "message_thread_id",
                     ty: Option(RawTy("ThreadId")),
                     descr: Doc(md: "Unique identifier for the target message thread (topic) of the forum; for forum supergroups only"),
@@ -1452,6 +1514,16 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)"),
                 ),
                 Param(
+                    name: "receiver_user_id",
+                    ty: Option(i64),
+                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
+                ),
+                Param(
+                    name: "callback_query_id",
+                    ty: Option(String),
+                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                ),
+                Param(
                     name: "message_thread_id",
                     ty: Option(RawTy("ThreadId")),
                     descr: Doc(md: "Unique identifier for the target message thread (topic) of the forum; for forum supergroups only"),
@@ -1560,6 +1632,16 @@ Schema(
                     name: "chat_id",
                     ty: RawTy("Recipient"),
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)"),
+                ),
+                Param(
+                    name: "receiver_user_id",
+                    ty: Option(i64),
+                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
+                ),
+                Param(
+                    name: "callback_query_id",
+                    ty: Option(String),
+                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -1837,6 +1919,16 @@ Schema(
                     name: "chat_id",
                     ty: RawTy("Recipient"),
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)"),
+                ),
+                Param(
+                    name: "receiver_user_id",
+                    ty: Option(i64),
+                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
+                ),
+                Param(
+                    name: "callback_query_id",
+                    ty: Option(String),
+                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -2189,6 +2281,16 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)")
                 ),
                 Param(
+                    name: "receiver_user_id",
+                    ty: Option(i64),
+                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
+                ),
+                Param(
+                    name: "callback_query_id",
+                    ty: Option(String),
+                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                ),
+                Param(
                     name: "message_thread_id",
                     ty: Option(RawTy("ThreadId")),
                     descr: Doc(md: "Unique identifier for the target message thread (topic) of the forum; for forum supergroups only"),
@@ -2306,6 +2408,16 @@ Schema(
                     name: "chat_id",
                     ty: RawTy("Recipient"),
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)")
+                ),
+                Param(
+                    name: "receiver_user_id",
+                    ty: Option(i64),
+                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
+                ),
+                Param(
+                    name: "callback_query_id",
+                    ty: Option(String),
+                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -4842,6 +4954,180 @@ Schema(
             ],
         ),
         Method(
+            names: ("editEphemeralMessageText", "EditEphemeralMessageText", "edit_ephemeral_message_text"),
+            return_ty: True,
+            doc: Doc(md: "Use this method to edit text of an ephemeral message. Returns True on success."),
+            tg_doc: "https://core.telegram.org/bots/api#editephemeralmessagetext",
+            tg_category: "Updating messages",
+            params: [
+                Param(
+                    name: "chat_id",
+                    ty: RawTy("Recipient"),
+                    descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`).")
+                ),
+                Param(
+                    name: "receiver_user_id",
+                    ty: i64,
+                    descr: Doc(md: "Identifier of the user who received the message")
+                ),
+                Param(
+                    name: "ephemeral_message_id",
+                    ty: RawTy("MessageId"),
+                    descr: Doc(md: "Unique identifier of the ephemeral message to edit")
+                ),
+                Param(
+                    name: "text",
+                    ty: String,
+                    descr: Doc(md: "New text of the message, 1-4096 characters after entities parsing")
+                ),
+                Param(
+                    name: "parse_mode",
+                    ty: Option(RawTy("ParseMode")),
+                    descr: Doc(
+                        md: "Mode for parsing entities in the message text. See [formatting options] for more details.",
+                        md_links: {"formatting options": "https://core.telegram.org/bots/api#formatting-options"}
+                    )
+                ),
+                Param(
+                    name: "entities",
+                    ty: Option(ArrayOf(RawTy("MessageEntity"))),
+                    descr: Doc(md: "List of special entities that appear in message text, which can be specified instead of _parse\\_mode_"),
+                ),
+                Param(
+                    name: "link_preview_options",
+                    ty: Option(RawTy("LinkPreviewOptions")),
+                    descr: Doc(md: "Link preview generation options for the message"),
+                ),
+                Param(
+                    name: "reply_markup",
+                    ty: Option(RawTy("InlineKeyboardMarkup")),
+                    descr: Doc(
+                        md: "A JSON-serialized object for an [inline keyboard].",
+                        md_links: {"inline keyboard": "https://core.telegram.org/bots#inline-keyboards-and-on-the-fly-updating"},
+                    ),
+                ),
+            ],
+        ),
+        Method(
+            names: ("editEphemeralMessageCaption", "EditEphemeralMessageCaption", "edit_ephemeral_message_caption"),
+            return_ty: True,
+            doc: Doc(md: "Use this method to edit the caption of an ephemeral message. Returns True on success."),
+            tg_doc: "https://core.telegram.org/bots/api#editephemeralmessagecaption",
+            tg_category: "Updating messages",
+            params: [
+                Param(
+                    name: "chat_id",
+                    ty: RawTy("Recipient"),
+                    descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`).")
+                ),
+                Param(
+                    name: "receiver_user_id",
+                    ty: i64,
+                    descr: Doc(md: "Identifier of the user who received the message")
+                ),
+                Param(
+                    name: "ephemeral_message_id",
+                    ty: RawTy("MessageId"),
+                    descr: Doc(md: "Unique identifier of the ephemeral message to edit")
+                ),
+                Param(
+                    name: "caption",
+                    ty: Option(String),
+                    descr: Doc(md: "New caption of the message, 0-1024 characters after entities parsing")
+                ),
+                Param(
+                    name: "parse_mode",
+                    ty: Option(RawTy("ParseMode")),
+                    descr: Doc(
+                        md: "Mode for parsing entities in the message text. See [formatting options] for more details.",
+                        md_links: {"formatting options": "https://core.telegram.org/bots/api#formatting-options"}
+                    )
+                ),
+                Param(
+                    name: "caption_entities",
+                    ty: Option(ArrayOf(RawTy("MessageEntity"))),
+                    descr: Doc(md: "List of special entities that appear in the caption, which can be specified instead of _parse\\_mode_"),
+                ),
+                Param(
+                    name: "reply_markup",
+                    ty: Option(RawTy("InlineKeyboardMarkup")),
+                    descr: Doc(
+                        md: "A JSON-serialized object for an [inline keyboard].",
+                        md_links: {"inline keyboard": "https://core.telegram.org/bots#inline-keyboards-and-on-the-fly-updating",}
+                    ),
+                ),
+            ],
+        ),
+        Method(
+            names: ("editEphemeralMessageMedia", "EditEphemeralMessageMedia", "edit_ephemeral_message_media"),
+            return_ty: True,
+            doc: Doc(md: "Use this method to edit the media of an ephemeral message. Returns True on success."),
+            tg_doc: "https://core.telegram.org/bots/api#editephemeralmessagemedia",
+            tg_category: "Updating messages",
+            params: [
+                Param(
+                    name: "chat_id",
+                    ty: RawTy("Recipient"),
+                    descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`).")
+                ),
+                Param(
+                    name: "receiver_user_id",
+                    ty: i64,
+                    descr: Doc(md: "Identifier of the user who received the message")
+                ),
+                Param(
+                    name: "ephemeral_message_id",
+                    ty: RawTy("MessageId"),
+                    descr: Doc(md: "Unique identifier of the ephemeral message to edit")
+                ),
+                Param(
+                    name: "media",
+                    ty: RawTy("InputMedia"),
+                    descr: Doc(md: "A JSON-serialized object for the new media content of the message. A new file can't be uploaded; use a previously uploaded file via its file_id or specify a URL.")
+                ),
+                Param(
+                    name: "reply_markup",
+                    ty: Option(RawTy("InlineKeyboardMarkup")),
+                    descr: Doc(
+                        md: "A JSON-serialized object for an [inline keyboard].",
+                        md_links: {"inline keyboard": "https://core.telegram.org/bots#inline-keyboards-and-on-the-fly-updating"}
+                    ),
+                ),
+            ],
+        ),
+        Method(
+            names: ("editEphemeralMessageReplyMarkup", "EditEphemeralMessageReplyMarkup", "edit_ephemeral_message_reply_markup"),
+            return_ty: True,
+            doc: Doc(md: "Use this method to edit only the reply markup of an ephemeral message. Returns True on success."),
+            tg_doc: "https://core.telegram.org/bots/api#editephemeralmessagereplymarkup",
+            tg_category: "Updating messages",
+            params: [
+                Param(
+                    name: "chat_id",
+                    ty: RawTy("Recipient"),
+                    descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`).")
+                ),
+                Param(
+                    name: "receiver_user_id",
+                    ty: i64,
+                    descr: Doc(md: "Identifier of the user who received the message")
+                ),
+                Param(
+                    name: "ephemeral_message_id",
+                    ty: RawTy("MessageId"),
+                    descr: Doc(md: "Unique identifier of the ephemeral message to edit")
+                ),
+                Param(
+                    name: "reply_markup",
+                    ty: Option(RawTy("InlineKeyboardMarkup")),
+                    descr: Doc(
+                        md: "A JSON-serialized object for an [inline keyboard].",
+                        md_links: {"inline keyboard": "https://core.telegram.org/bots#inline-keyboards-and-on-the-fly-updating",}
+                    ),
+                ),
+            ],
+        ),
+        Method(
             names: ("stopPoll", "StopPoll", "stop_poll"),
             return_ty: RawTy("Poll"),
             doc: Doc(md: "Use this method to stop a poll which was sent by the bot. On success, the stopped Poll with the final results is returned."),
@@ -4941,6 +5227,30 @@ Schema(
             ],
         ),
         Method(
+            names: ("deleteEphemeralMessage", "DeleteEphemeralMessage", "delete_ephemeral_message"),
+            return_ty: True,
+            doc: Doc(md: "Use this method to delete an ephemeral message. Returns True on success."),
+            tg_doc: "https://core.telegram.org/bots/api#deleteephemeralmessage",
+            tg_category: "Updating messages",
+            params: [
+                Param(
+                    name: "chat_id",
+                    ty: RawTy("Recipient"),
+                    descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`).")
+                ),
+                Param(
+                    name: "receiver_user_id",
+                    ty: i64,
+                    descr: Doc(md: "Identifier of the user who received the message")
+                ),
+                Param(
+                    name: "ephemeral_message_id",
+                    ty: RawTy("MessageId"),
+                    descr: Doc(md: "Unique identifier of the ephemeral message to delete")
+                ),
+            ],
+        ),
+        Method(
             names: ("deleteMessages", "DeleteMessages", "delete_messages"),
             return_ty: True,
             doc: Doc(md: "Use this method to delete multiple messages simultaneously. If some of the specified messages can't be found, they are skipped. Returns _True_ on success."),
@@ -5006,6 +5316,16 @@ Schema(
                     name: "chat_id",
                     ty: RawTy("Recipient"),
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`).")
+                ),
+                Param(
+                    name: "receiver_user_id",
+                    ty: Option(i64),
+                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
+                ),
+                Param(
+                    name: "callback_query_id",
+                    ty: Option(String),
+                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
                 ),
                 Param(
                     name: "message_thread_id",

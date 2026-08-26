@@ -44,6 +44,7 @@ mod delete_all_message_reactions;
 mod delete_business_messages;
 mod delete_chat_photo;
 mod delete_chat_sticker_set;
+mod delete_ephemeral_message;
 mod delete_forum_topic;
 mod delete_message;
 mod delete_message_reaction;
@@ -55,6 +56,10 @@ mod delete_story;
 mod delete_webhook;
 mod edit_chat_invite_link;
 mod edit_chat_subscription_invite_link;
+mod edit_ephemeral_message_caption;
+mod edit_ephemeral_message_media;
+mod edit_ephemeral_message_reply_markup;
+mod edit_ephemeral_message_text;
 mod edit_forum_topic;
 mod edit_general_forum_topic;
 mod edit_message_caption;
@@ -241,6 +246,7 @@ pub use delete_all_message_reactions::{
 pub use delete_business_messages::{DeleteBusinessMessages, DeleteBusinessMessagesSetters};
 pub use delete_chat_photo::{DeleteChatPhoto, DeleteChatPhotoSetters};
 pub use delete_chat_sticker_set::{DeleteChatStickerSet, DeleteChatStickerSetSetters};
+pub use delete_ephemeral_message::{DeleteEphemeralMessage, DeleteEphemeralMessageSetters};
 pub use delete_forum_topic::{DeleteForumTopic, DeleteForumTopicSetters};
 pub use delete_message::{DeleteMessage, DeleteMessageSetters};
 pub use delete_message_reaction::{DeleteMessageReaction, DeleteMessageReactionSetters};
@@ -254,6 +260,16 @@ pub use edit_chat_invite_link::{EditChatInviteLink, EditChatInviteLinkSetters};
 pub use edit_chat_subscription_invite_link::{
     EditChatSubscriptionInviteLink, EditChatSubscriptionInviteLinkSetters,
 };
+pub use edit_ephemeral_message_caption::{
+    EditEphemeralMessageCaption, EditEphemeralMessageCaptionSetters,
+};
+pub use edit_ephemeral_message_media::{
+    EditEphemeralMessageMedia, EditEphemeralMessageMediaSetters,
+};
+pub use edit_ephemeral_message_reply_markup::{
+    EditEphemeralMessageReplyMarkup, EditEphemeralMessageReplyMarkupSetters,
+};
+pub use edit_ephemeral_message_text::{EditEphemeralMessageText, EditEphemeralMessageTextSetters};
 pub use edit_forum_topic::{EditForumTopic, EditForumTopicSetters};
 pub use edit_general_forum_topic::{EditGeneralForumTopic, EditGeneralForumTopicSetters};
 pub use edit_message_caption::{EditMessageCaption, EditMessageCaptionSetters};
@@ -521,6 +537,8 @@ mod rich_message_tests {
         InputRichMessage {
             html: Some("<b>hi</b>".to_owned()),
             markdown: None,
+            blocks: None,
+            media: None,
             is_rtl: None,
             skip_entity_detection: None,
         }
@@ -580,5 +598,70 @@ mod rich_message_tests {
 
         assert!(json.get("text").is_none());
         assert_eq!(json["rich_message"]["html"], "<b>hi</b>");
+    }
+}
+
+#[cfg(test)]
+mod ephemeral_message_tests {
+    use crate::{
+        payloads::{
+            DeleteEphemeralMessage, EditEphemeralMessageCaption, EditEphemeralMessageMedia,
+            EditEphemeralMessageReplyMarkup, EditEphemeralMessageText, SendMessage,
+            SendMessageSetters,
+        },
+        types::{ChatId, InputFile, InputMedia, InputMediaPhoto, MessageId, Recipient},
+    };
+
+    #[test]
+    fn ephemeral_payloads_serialize_receiver_user_id() {
+        let chat_id = Recipient::Id(ChatId(42));
+        let ephemeral_message_id = MessageId(7);
+
+        let text = EditEphemeralMessageText::new(chat_id.clone(), 99, ephemeral_message_id, "text");
+        let caption = EditEphemeralMessageCaption::new(chat_id.clone(), 99, ephemeral_message_id);
+        let media = EditEphemeralMessageMedia::new(
+            chat_id.clone(),
+            99,
+            ephemeral_message_id,
+            InputMedia::Photo(InputMediaPhoto::new(InputFile::file_id("photo".into()))),
+        );
+        let markup =
+            EditEphemeralMessageReplyMarkup::new(chat_id.clone(), 99, ephemeral_message_id);
+        let delete = DeleteEphemeralMessage::new(chat_id, 99, ephemeral_message_id);
+
+        for payload in [
+            serde_json::to_value(text).unwrap(),
+            serde_json::to_value(caption).unwrap(),
+            serde_json::to_value(media).unwrap(),
+            serde_json::to_value(markup).unwrap(),
+            serde_json::to_value(delete).unwrap(),
+        ] {
+            assert_eq!(payload["receiver_user_id"], 99);
+            assert_eq!(payload["ephemeral_message_id"], 7);
+        }
+    }
+
+    #[test]
+    fn send_message_serializes_receiver_user_id_and_callback_query_id_when_set() {
+        let chat_id = Recipient::Id(ChatId(42));
+        let payload = SendMessage::new(chat_id, "hello")
+            .receiver_user_id(99)
+            .callback_query_id("callback_id");
+
+        let json = serde_json::to_value(&payload).unwrap();
+
+        assert_eq!(json["receiver_user_id"], 99);
+        assert_eq!(json["callback_query_id"], "callback_id");
+    }
+
+    #[test]
+    fn send_message_omits_receiver_user_id_and_callback_query_id_when_unset() {
+        let chat_id = Recipient::Id(ChatId(42));
+        let payload = SendMessage::new(chat_id, "hello");
+
+        let json = serde_json::to_value(&payload).unwrap();
+
+        assert!(json.get("receiver_user_id").is_none());
+        assert!(json.get("callback_query_id").is_none());
     }
 }

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Support for TBA 10.2
+  - Rich-message input: `InputRichBlock` type tree, `InputRichMessageMedia`, `InputMediaVoiceNote`, and `InputRichMessage::blocks`/`media` fields
+  - Ephemeral messages: `receiver_user_id`/`callback_query_id` send parameters, `edit_ephemeral_message_text`/`_media`/`_caption`/`_reply_markup` and `delete_ephemeral_message` methods, `BotCommand::is_ephemeral`, `Message::receiver_user`/`ephemeral_message_id`, and `ReplyParameters::ephemeral_message_id`
+  - Communities: `Community`, `CommunityChatAdded`, `CommunityChatRemoved`, and `ChatFullInfo::community`
+  - Subscriptions: `BotSubscriptionUpdated` and `Update`'s `subscription` variant
+  - `ReplyParameters::message_id` is now optional (an alternative to the new `ephemeral_message_id` field) [**BC**]
+  - `EditMessageText`, `EditMessageTextInline`, `SendRichMessage`, and `SendRichMessageDraft` no longer derive `PartialEq`/`Eq`/`Hash`, since their `rich_message: InputRichMessage` parameter can now carry structured `blocks`/`media` content [**BC**]
+  - `InputRichMessage` and `InputMessageContentRichMessage` no longer derive `Eq`/`Hash` (both still derive `PartialEq`), for the same reason [**BC**]
 - Support for TBA 10.1
   - Join request queries: `User::supports_join_request_queries`, `ChatFullInfo::guard_bot`, `ChatJoinRequest::query_id`, `answer_chat_join_request_query` and `send_chat_join_request_web_app` methods
   - Polls: `Link` and `InputMediaLink` structs, and `link` field to `PollMedia` struct
