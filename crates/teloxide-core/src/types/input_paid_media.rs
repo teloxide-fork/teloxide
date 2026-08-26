@@ -14,6 +14,7 @@ use crate::types::{InputFile, Seconds};
 pub enum InputPaidMedia {
     Photo(InputPaidMediaPhoto),
     Video(Box<InputPaidMediaVideo>),
+    LivePhoto(InputPaidMediaLivePhoto),
 }
 
 impl From<InputPaidMedia> for InputFile {
@@ -21,6 +22,7 @@ impl From<InputPaidMedia> for InputFile {
         match media {
             InputPaidMedia::Photo(InputPaidMediaPhoto { media, .. }) => media,
             InputPaidMedia::Video(input_paid_media_video) => input_paid_media_video.media,
+            InputPaidMedia::LivePhoto(InputPaidMediaLivePhoto { media, .. }) => media,
         }
     }
 }
@@ -35,6 +37,7 @@ impl InputPaidMedia {
             Video(input_paid_media_video) => {
                 (&input_paid_media_video.media, input_paid_media_video.thumbnail.as_ref())
             }
+            LivePhoto(InputPaidMediaLivePhoto { media, photo }) => (media, Some(photo)),
         };
 
         iter::once(media).chain(thumbnail)
@@ -49,6 +52,7 @@ impl InputPaidMedia {
             Video(input_paid_media_video) => {
                 (&mut input_paid_media_video.media, input_paid_media_video.thumbnail.as_mut())
             }
+            LivePhoto(InputPaidMediaLivePhoto { media, photo }) => (media, Some(photo)),
         };
 
         iter::once(media).chain(thumbnail)
@@ -78,6 +82,35 @@ impl InputPaidMediaPhoto {
 
     pub fn media(mut self, val: InputFile) -> Self {
         self.media = val;
+        self
+    }
+}
+
+/// The paid media to send is a live photo.
+///
+/// [The official docs](https://core.telegram.org/bots/api#inputpaidmedialivephoto).
+#[derive(Clone, Debug, Serialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+pub struct InputPaidMediaLivePhoto {
+    /// Live photo video to send.
+    pub media: InputFile,
+
+    /// Photo to send.
+    pub photo: InputFile,
+}
+
+impl InputPaidMediaLivePhoto {
+    pub const fn new(media: InputFile, photo: InputFile) -> Self {
+        Self { media, photo }
+    }
+
+    pub fn media(mut self, val: InputFile) -> Self {
+        self.media = val;
+        self
+    }
+
+    pub fn photo(mut self, val: InputFile) -> Self {
+        self.photo = val;
         self
     }
 }
@@ -242,5 +275,23 @@ mod tests {
 
         let actual_json = serde_json::to_string(&video).unwrap();
         assert_eq!(expected_json, actual_json);
+    }
+
+    #[test]
+    fn live_photo_files() {
+        let mut live_photo = InputPaidMedia::LivePhoto(InputPaidMediaLivePhoto::new(
+            InputFile::file_id("video".into()),
+            InputFile::file_id("photo".into()),
+        ));
+
+        assert_eq!(live_photo.files().count(), 2);
+        for file in live_photo.files_mut() {
+            *file = InputFile::file_id("updated".into());
+        }
+
+        assert_eq!(
+            serde_json::to_string(&live_photo).unwrap(),
+            r#"{"type":"live_photo","media":"updated","photo":"updated"}"#,
+        );
     }
 }

@@ -1,4 +1,4 @@
-use crate::types::{Chat, MessageEntity, PollType, Seconds, User};
+use crate::types::{Chat, MessageEntity, PollMedia, PollType, Seconds, User};
 
 use chrono::{DateTime, Utc};
 use derive_more::derive::From;
@@ -26,7 +26,7 @@ pub struct PollId(pub String);
 ///
 /// [The official docs](https://core.telegram.org/bots/api#poll).
 #[serde_with::skip_serializing_none]
-#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 pub struct Poll {
     /// Unique poll identifier.
@@ -87,12 +87,26 @@ pub struct Poll {
 
     /// Special entities that appear in the description.
     pub description_entities: Option<Vec<MessageEntity>>,
+
+    /// `true`, if the poll is available only to chat members.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub members_only: bool,
+
+    /// ISO 3166-1 alpha-2 country codes of countries where the poll is
+    /// available.
+    pub country_codes: Option<Vec<String>>,
+
+    /// Media accompanying the poll explanation.
+    pub explanation_media: Option<PollMedia>,
+
+    /// Media accompanying the poll.
+    pub media: Option<PollMedia>,
 }
 
 /// This object contains information about one answer option in a poll.
 ///
 /// [The official docs](https://core.telegram.org/bots/api#polloption).
-#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 pub struct PollOption {
     /// Persistent identifier of the option.
@@ -118,6 +132,9 @@ pub struct PollOption {
     #[serde(default, with = "crate::types::serde_opt_date_from_unix_timestamp")]
     #[cfg_attr(test, schemars(with = "Option<i64>"))]
     pub addition_date: Option<DateTime<Utc>>,
+
+    /// Media accompanying the poll option.
+    pub media: Option<PollMedia>,
 }
 
 impl Poll {
@@ -180,5 +197,33 @@ mod tests {
         }
         "#;
         serde_json::from_str::<Poll>(data).unwrap();
+    }
+
+    #[test]
+    fn deserialize_media_fields() {
+        let poll: Poll = serde_json::from_str(
+            r#"{
+                "id":"poll",
+                "question":"Question",
+                "options":[{"persistent_id":"option","text":"Option","voter_count":0,"media":{}}],
+                "is_closed":false,
+                "total_voter_count":0,
+                "is_anonymous":true,
+                "type":"regular",
+                "allows_multiple_answers":false,
+                "allows_revoting":false,
+                "members_only":true,
+                "country_codes":["US"],
+                "explanation_media":{},
+                "media":{}
+            }"#,
+        )
+        .unwrap();
+
+        assert!(poll.members_only);
+        assert_eq!(poll.country_codes, Some(vec!["US".to_owned()]));
+        assert!(poll.explanation_media.is_some());
+        assert!(poll.media.is_some());
+        assert!(poll.options[0].media.is_some());
     }
 }

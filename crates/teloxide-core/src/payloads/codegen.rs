@@ -27,6 +27,7 @@ fn codegen_payloads() {
         let uses = uses(&method);
 
         let method_doc = render_doc(&method.doc, method.sibling.as_deref());
+        let partial_eq_derive = if partial_eq_suitable(&method) { " PartialEq," } else { "" };
         let eq_hash_derive = if eq_hash_suitable(&method) { " Eq, Hash," } else { "" };
         let default_derive = if default_needed(&method) { " Default," } else { "" };
 
@@ -73,7 +74,10 @@ fn codegen_payloads() {
             ) {
             "#[derive(Debug, Clone, Serialize)]".to_owned()
         } else {
-            format!("#[derive(Debug, PartialEq,{eq_hash_derive}{default_derive} Clone, Serialize)]")
+            format!(
+                "#[derive(Debug,{partial_eq_derive}{eq_hash_derive}{default_derive} Clone, \
+                 Serialize)]"
+            )
         };
 
         let timeout_secs = match &*method.names.2 {
@@ -180,6 +184,18 @@ fn render_doc(doc: &Doc, sibling: Option<&str>) -> String {
     ["    /// ", &doc.md.replace('\n', "\n    /// "), &sibling_note, &links].concat()
 }
 
+fn partial_eq_suitable(method: &Method) -> bool {
+    fn ty_partial_eq_suitable(ty: &Type) -> bool {
+        match ty {
+            Type::Option(inner) | Type::ArrayOf(inner) => ty_partial_eq_suitable(&*inner),
+            Type::RawTy(raw) => raw != "InputPollMedia",
+            _ => true,
+        }
+    }
+
+    method.params.iter().all(|p| ty_partial_eq_suitable(&p.ty))
+}
+
 fn eq_hash_suitable(method: &Method) -> bool {
     fn ty_eq_hash_suitable(ty: &Type) -> bool {
         match ty {
@@ -199,7 +215,10 @@ fn eq_hash_suitable(method: &Method) -> bool {
             Type::Url | Type::DateTime => true,
 
             Type::RawTy(raw) => {
-                raw != "InputSticker" && raw != "MaskPosition" && raw != "InlineQueryResult"
+                raw != "InputPollMedia"
+                    && raw != "InputSticker"
+                    && raw != "MaskPosition"
+                    && raw != "InlineQueryResult"
             }
         }
     }

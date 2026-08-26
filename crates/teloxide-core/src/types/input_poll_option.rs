@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
+use std::hash::{Hash, Hasher};
 
-use crate::types::{MessageEntity, ParseMode};
+use crate::types::{InputPollOptionMedia, MessageEntity, ParseMode};
 
 /// This object contains information about one answer option in a poll to send.
 ///
 /// [The official docs](https://core.telegram.org/bots/api#inputpolloption).
 #[derive(Clone, Debug)]
-#[derive(PartialEq, Eq, Hash)]
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 pub struct InputPollOption {
@@ -15,6 +15,28 @@ pub struct InputPollOption {
 
     #[serde(flatten, skip_serializing_if = "Option::is_none")]
     pub formatting: Option<InputPollOptionFormatting>,
+
+    /// Media accompanying the poll option.
+    #[serde(default, skip_deserializing, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, schemars(!skip_deserializing))]
+    pub media: Option<InputPollOptionMedia>,
+}
+
+impl PartialEq for InputPollOption {
+    fn eq(&self, other: &Self) -> bool {
+        self.text == other.text
+            && self.formatting == other.formatting
+            && serde_json::to_value(&self.media).ok() == serde_json::to_value(&other.media).ok()
+    }
+}
+
+impl Eq for InputPollOption {}
+
+impl Hash for InputPollOption {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.text.hash(state);
+        self.formatting.hash(state);
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -39,7 +61,7 @@ impl InputPollOption {
     where
         S: Into<String>,
     {
-        Self { text: text.into(), formatting: None }
+        Self { text: text.into(), formatting: None, media: None }
     }
 
     pub fn text_parse_mode(self, text_parse_mode: ParseMode) -> Self {
@@ -48,6 +70,10 @@ impl InputPollOption {
 
     pub fn text_entities(self, text_entities: Vec<MessageEntity>) -> Self {
         Self { formatting: Some(InputPollOptionFormatting::TextEntities(text_entities)), ..self }
+    }
+
+    pub fn media(self, media: InputPollOptionMedia) -> Self {
+        Self { media: Some(media), ..self }
     }
 }
 
@@ -65,7 +91,7 @@ impl From<&str> for InputPollOption {
 
 #[cfg(test)]
 mod tests {
-    use crate::types::{CustomEmojiId, MessageEntityKind};
+    use crate::types::{CustomEmojiId, InputFile, InputMediaSticker, MessageEntityKind};
 
     use super::*;
 
@@ -95,5 +121,15 @@ mod tests {
         .unwrap();
 
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn serialize_media() {
+        let option = InputPollOption::new("Yay").media(InputPollOptionMedia::Sticker(
+            InputMediaSticker::new(InputFile::file_id("sticker".into())),
+        ));
+
+        let value = serde_json::to_value(option).unwrap();
+        assert_eq!(value["media"]["type"], "sticker");
     }
 }

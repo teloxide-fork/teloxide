@@ -257,6 +257,7 @@ mod tests {
                 has_topics_enabled: false,
                 allows_users_to_create_topics: false,
                 can_manage_bots: false,
+                supports_guest_queries: false,
             },
             kind: TransactionPartnerUserKind::PremiumPurchase(
                 TransactionPartnerUserPremiumPurchase { premium_subscription_duration: Some(1) },

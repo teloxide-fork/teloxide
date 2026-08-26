@@ -193,15 +193,9 @@ pub trait Requester {
     type SendMessageDraft: Request<Payload = SendMessageDraft, Err = Self::Err>;
 
     /// For Telegram documentation see [`SendMessageDraft`].
-    fn send_message_draft<C, T>(
-        &self,
-        chat_id: C,
-        draft_id: i64,
-        text: T,
-    ) -> Self::SendMessageDraft
+    fn send_message_draft<C>(&self, chat_id: C, draft_id: i64) -> Self::SendMessageDraft
     where
-        C: Into<ChatId>,
-        T: Into<String>;
+        C: Into<ChatId>;
 
     type ForwardMessage: Request<Payload = ForwardMessage, Err = Self::Err>;
 
@@ -261,6 +255,18 @@ pub trait Requester {
 
     /// For Telegram documentation see [`SendPhoto`].
     fn send_photo<C>(&self, chat_id: C, photo: InputFile) -> Self::SendPhoto
+    where
+        C: Into<Recipient>;
+
+    type SendLivePhoto: Request<Payload = SendLivePhoto, Err = Self::Err>;
+
+    /// For Telegram documentation see [`SendLivePhoto`].
+    fn send_live_photo<C>(
+        &self,
+        chat_id: C,
+        live_photo: InputFile,
+        photo: InputFile,
+    ) -> Self::SendLivePhoto
     where
         C: Into<Recipient>;
 
@@ -428,6 +434,27 @@ pub trait Requester {
 
     /// For Telegram documentation see [`GetManagedBotToken`].
     fn get_managed_bot_token(&self, user_id: UserId) -> Self::GetManagedBotToken;
+
+    type GetManagedBotAccessSettings: Request<
+        Payload = GetManagedBotAccessSettings,
+        Err = Self::Err,
+    >;
+
+    /// For Telegram documentation see [`GetManagedBotAccessSettings`].
+    fn get_managed_bot_access_settings(&self, user_id: UserId)
+        -> Self::GetManagedBotAccessSettings;
+
+    type SetManagedBotAccessSettings: Request<
+        Payload = SetManagedBotAccessSettings,
+        Err = Self::Err,
+    >;
+
+    /// For Telegram documentation see [`SetManagedBotAccessSettings`].
+    fn set_managed_bot_access_settings(
+        &self,
+        user_id: UserId,
+        is_access_restricted: bool,
+    ) -> Self::SetManagedBotAccessSettings;
 
     type ReplaceManagedBotToken: Request<Payload = ReplaceManagedBotToken, Err = Self::Err>;
 
@@ -776,6 +803,18 @@ pub trait Requester {
     where
         C: Into<Recipient>;
 
+    type GetUserPersonalChatMessages: Request<
+        Payload = GetUserPersonalChatMessages,
+        Err = Self::Err,
+    >;
+
+    /// For Telegram documentation see [`GetUserPersonalChatMessages`].
+    fn get_user_personal_chat_messages(
+        &self,
+        user_id: UserId,
+        limit: u8,
+    ) -> Self::GetUserPersonalChatMessages;
+
     type SetChatStickerSet: Request<Payload = SetChatStickerSet, Err = Self::Err>;
 
     /// For Telegram documentation see [`SetChatStickerSet`].
@@ -922,6 +961,17 @@ pub trait Requester {
     fn get_user_chat_boosts<C>(&self, chat_id: C, user_id: UserId) -> Self::GetUserChatBoosts
     where
         C: Into<Recipient>;
+
+    type AnswerGuestQuery: Request<Payload = AnswerGuestQuery, Err = Self::Err>;
+
+    /// For Telegram documentation see [`AnswerGuestQuery`].
+    fn answer_guest_query<G>(
+        &self,
+        guest_query_id: G,
+        result: InlineQueryResult,
+    ) -> Self::AnswerGuestQuery
+    where
+        G: Into<String>;
 
     type SetMyCommands: Request<Payload = SetMyCommands, Err = Self::Err>;
 
@@ -1181,6 +1231,24 @@ pub trait Requester {
     where
         C: Into<Recipient>,
         M: IntoIterator<Item = MessageId>;
+
+    type DeleteMessageReaction: Request<Payload = DeleteMessageReaction, Err = Self::Err>;
+
+    /// For Telegram documentation see [`DeleteMessageReaction`].
+    fn delete_message_reaction<C>(
+        &self,
+        chat_id: C,
+        message_id: MessageId,
+    ) -> Self::DeleteMessageReaction
+    where
+        C: Into<Recipient>;
+
+    type DeleteAllMessageReactions: Request<Payload = DeleteAllMessageReactions, Err = Self::Err>;
+
+    /// For Telegram documentation see [`DeleteAllMessageReactions`].
+    fn delete_all_message_reactions<C>(&self, chat_id: C) -> Self::DeleteAllMessageReactions
+    where
+        C: Into<Recipient>;
 
     type SendSticker: Request<Payload = SendSticker, Err = Self::Err>;
 
@@ -1756,6 +1824,7 @@ macro_rules! forward_all {
             send_message,
             send_message_draft,
             send_photo,
+            send_live_photo,
             send_audio,
             send_document,
             send_video,
@@ -1809,6 +1878,7 @@ macro_rules! forward_all {
             get_chat_members_count,
             get_chat_member_count,
             get_chat_member,
+            get_user_personal_chat_messages,
             set_chat_sticker_set,
             delete_chat_sticker_set,
             get_forum_topic_icon_stickers,
@@ -1826,6 +1896,7 @@ macro_rules! forward_all {
             unpin_all_general_forum_topic_messages,
             answer_callback_query,
             get_user_chat_boosts,
+            answer_guest_query,
             set_my_commands,
             get_business_connection,
             get_my_commands,
@@ -1844,6 +1915,8 @@ macro_rules! forward_all {
             answer_web_app_query,
             save_prepared_inline_message,
             get_managed_bot_token,
+            get_managed_bot_access_settings,
+            set_managed_bot_access_settings,
             replace_managed_bot_token,
             save_prepared_keyboard_button,
             edit_message_text,
@@ -1859,6 +1932,8 @@ macro_rules! forward_all {
             decline_suggested_post,
             delete_message,
             delete_messages,
+            delete_message_reaction,
+            delete_all_message_reactions,
             send_sticker,
             get_sticker_set,
             get_custom_emoji_stickers,

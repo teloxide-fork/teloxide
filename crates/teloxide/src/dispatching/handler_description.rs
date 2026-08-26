@@ -63,6 +63,7 @@ impl EventKind for Kind {
 
         [
             Message,
+            GuestMessage,
             EditedMessage,
             ChannelPost,
             EditedChannelPost,
@@ -99,10 +100,15 @@ impl EventKind for Kind {
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        dispatching::UpdateFilterExt,
+        types::{AllowedUpdate, Update as CoreUpdate},
+    };
+
     #[cfg(feature = "macros")]
     use crate::{
         self as teloxide, // fixup for the `BotCommands` macro
-        dispatching::{handler_description::Kind, HandlerExt, UpdateFilterExt},
+        dispatching::{handler_description::Kind, HandlerExt},
         types::{AllowedUpdate::*, Update},
         utils::command::BotCommands,
     };
@@ -142,6 +148,16 @@ mod tests {
         panic!("this test requires `macros` feature")
     }
 
+    #[test]
+    fn guest_message() {
+        let handler = dptree::entry().branch(
+            <CoreUpdate as UpdateFilterExt<()>>::filter_guest_message().endpoint(|| async {}),
+        );
+        let allowed_updates = handler.description().allowed_updates();
+
+        assert_eq!(allowed_updates, [AllowedUpdate::GuestMessage]);
+    }
+
     // Test that all possible updates are specified in `Kind::full_set()`
     #[test]
     #[cfg(feature = "macros")]
@@ -149,6 +165,7 @@ mod tests {
         let full_set = Kind::full_set();
         let allowed_updates_reference = vec![
             Message,
+            GuestMessage,
             EditedMessage,
             ChannelPost,
             EditedChannelPost,
@@ -174,6 +191,7 @@ mod tests {
             match update {
                 // CAUTION: Don't forget to add new `UpdateKind` to `allowed_updates_reference`!
                 Message
+                | GuestMessage
                 | EditedMessage
                 | ChannelPost
                 | EditedChannelPost

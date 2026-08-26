@@ -60,14 +60,13 @@ impl Requester for Bot {
 
     type SendMessageDraft = JsonRequest<payloads::SendMessageDraft>;
 
-    fn send_message_draft<C, T>(&self, chat_id: C, draft_id: i64, text: T) -> Self::SendMessageDraft
+    fn send_message_draft<C>(&self, chat_id: C, draft_id: i64) -> Self::SendMessageDraft
     where
         C: Into<ChatId>,
-        T: Into<String>,
     {
         Self::SendMessageDraft::new(
             self.clone(),
-            payloads::SendMessageDraft::new(chat_id, draft_id, text),
+            payloads::SendMessageDraft::new(chat_id, draft_id),
         )
     }
 
@@ -114,6 +113,23 @@ impl Requester for Bot {
         C: Into<Recipient>,
     {
         Self::SendPhoto::new(self.clone(), payloads::SendPhoto::new(chat_id, photo))
+    }
+
+    type SendLivePhoto = MultipartRequest<payloads::SendLivePhoto>;
+
+    fn send_live_photo<C>(
+        &self,
+        chat_id: C,
+        live_photo: InputFile,
+        photo: InputFile,
+    ) -> Self::SendLivePhoto
+    where
+        C: Into<Recipient>,
+    {
+        Self::SendLivePhoto::new(
+            self.clone(),
+            payloads::SendLivePhoto::new(chat_id, live_photo, photo),
+        )
     }
 
     type SendAudio = MultipartRequest<payloads::SendAudio>;
@@ -329,7 +345,7 @@ impl Requester for Bot {
         )
     }
 
-    type SendPoll = JsonRequest<payloads::SendPoll>;
+    type SendPoll = MultipartRequest<payloads::SendPoll>;
 
     fn send_poll<C, Q, O>(&self, chat_id: C, question: Q, options: O) -> Self::SendPoll
     where
@@ -768,6 +784,19 @@ impl Requester for Bot {
         Self::GetChatMember::new(self.clone(), payloads::GetChatMember::new(chat_id, user_id))
     }
 
+    type GetUserPersonalChatMessages = JsonRequest<payloads::GetUserPersonalChatMessages>;
+
+    fn get_user_personal_chat_messages(
+        &self,
+        user_id: UserId,
+        limit: u8,
+    ) -> Self::GetUserPersonalChatMessages {
+        Self::GetUserPersonalChatMessages::new(
+            self.clone(),
+            payloads::GetUserPersonalChatMessages::new(user_id, limit),
+        )
+    }
+
     type SetChatStickerSet = JsonRequest<payloads::SetChatStickerSet>;
 
     fn set_chat_sticker_set<C, S>(&self, chat_id: C, sticker_set_name: S) -> Self::SetChatStickerSet
@@ -1108,6 +1137,22 @@ impl Requester for Bot {
         )
     }
 
+    type AnswerGuestQuery = JsonRequest<payloads::AnswerGuestQuery>;
+
+    fn answer_guest_query<G>(
+        &self,
+        guest_query_id: G,
+        result: InlineQueryResult,
+    ) -> Self::AnswerGuestQuery
+    where
+        G: Into<String>,
+    {
+        Self::AnswerGuestQuery::new(
+            self.clone(),
+            payloads::AnswerGuestQuery::new(guest_query_id, result),
+        )
+    }
+
     type AnswerWebAppQuery = JsonRequest<payloads::AnswerWebAppQuery>;
 
     fn answer_web_app_query<W>(
@@ -1141,6 +1186,31 @@ impl Requester for Bot {
 
     fn get_managed_bot_token(&self, user_id: UserId) -> Self::GetManagedBotToken {
         Self::GetManagedBotToken::new(self.clone(), payloads::GetManagedBotToken::new(user_id))
+    }
+
+    type GetManagedBotAccessSettings = JsonRequest<payloads::GetManagedBotAccessSettings>;
+
+    fn get_managed_bot_access_settings(
+        &self,
+        user_id: UserId,
+    ) -> Self::GetManagedBotAccessSettings {
+        Self::GetManagedBotAccessSettings::new(
+            self.clone(),
+            payloads::GetManagedBotAccessSettings::new(user_id),
+        )
+    }
+
+    type SetManagedBotAccessSettings = JsonRequest<payloads::SetManagedBotAccessSettings>;
+
+    fn set_managed_bot_access_settings(
+        &self,
+        user_id: UserId,
+        is_access_restricted: bool,
+    ) -> Self::SetManagedBotAccessSettings {
+        Self::SetManagedBotAccessSettings::new(
+            self.clone(),
+            payloads::SetManagedBotAccessSettings::new(user_id, is_access_restricted),
+        )
     }
 
     type ReplaceManagedBotToken = JsonRequest<payloads::ReplaceManagedBotToken>;
@@ -1345,6 +1415,34 @@ impl Requester for Bot {
         M: IntoIterator<Item = MessageId>,
     {
         Self::DeleteMessages::new(self.clone(), payloads::DeleteMessages::new(chat_id, message_ids))
+    }
+
+    type DeleteMessageReaction = JsonRequest<payloads::DeleteMessageReaction>;
+
+    fn delete_message_reaction<C>(
+        &self,
+        chat_id: C,
+        message_id: MessageId,
+    ) -> Self::DeleteMessageReaction
+    where
+        C: Into<Recipient>,
+    {
+        Self::DeleteMessageReaction::new(
+            self.clone(),
+            payloads::DeleteMessageReaction::new(chat_id, message_id),
+        )
+    }
+
+    type DeleteAllMessageReactions = JsonRequest<payloads::DeleteAllMessageReactions>;
+
+    fn delete_all_message_reactions<C>(&self, chat_id: C) -> Self::DeleteAllMessageReactions
+    where
+        C: Into<Recipient>,
+    {
+        Self::DeleteAllMessageReactions::new(
+            self.clone(),
+            payloads::DeleteAllMessageReactions::new(chat_id),
+        )
     }
 
     type SendSticker = MultipartRequest<payloads::SendSticker>;

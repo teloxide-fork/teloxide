@@ -482,10 +482,9 @@ macro_rules! requester_forward {
     (@method send_message_draft $body:ident $ty:ident) => {
         type SendMessageDraft = $ty![SendMessageDraft];
 
-        fn send_message_draft<C, T>(&self, chat_id: C, draft_id: i64, text: T) -> Self::SendMessageDraft where C: Into<ChatId>,
-        T: Into<String> {
+        fn send_message_draft<C>(&self, chat_id: C, draft_id: i64) -> Self::SendMessageDraft where C: Into<ChatId> {
             let this = self;
-            $body!(send_message_draft this (chat_id: C, draft_id: i64, text: T))
+            $body!(send_message_draft this (chat_id: C, draft_id: i64))
         }
     };
     (@method forward_message $body:ident $ty:ident) => {
@@ -532,6 +531,14 @@ macro_rules! requester_forward {
         fn send_photo<C>(&self, chat_id: C, photo: InputFile) -> Self::SendPhoto where C: Into<Recipient> {
             let this = self;
             $body!(send_photo this (chat_id: C, photo: InputFile))
+        }
+    };
+    (@method send_live_photo $body:ident $ty:ident) => {
+        type SendLivePhoto = $ty![SendLivePhoto];
+
+        fn send_live_photo<C>(&self, chat_id: C, live_photo: InputFile, photo: InputFile) -> Self::SendLivePhoto where C: Into<Recipient> {
+            let this = self;
+            $body!(send_live_photo this (chat_id: C, live_photo: InputFile, photo: InputFile))
         }
     };
     (@method send_audio $body:ident $ty:ident) => {
@@ -674,6 +681,22 @@ macro_rules! requester_forward {
         fn get_managed_bot_token(&self, user_id: UserId) -> Self::GetManagedBotToken {
             let this = self;
             $body!(get_managed_bot_token this (user_id: UserId))
+        }
+    };
+    (@method get_managed_bot_access_settings $body:ident $ty:ident) => {
+        type GetManagedBotAccessSettings = $ty![GetManagedBotAccessSettings];
+
+        fn get_managed_bot_access_settings(&self, user_id: UserId) -> Self::GetManagedBotAccessSettings {
+            let this = self;
+            $body!(get_managed_bot_access_settings this (user_id: UserId))
+        }
+    };
+    (@method set_managed_bot_access_settings $body:ident $ty:ident) => {
+        type SetManagedBotAccessSettings = $ty![SetManagedBotAccessSettings];
+
+        fn set_managed_bot_access_settings(&self, user_id: UserId, is_access_restricted: bool) -> Self::SetManagedBotAccessSettings {
+            let this = self;
+            $body!(set_managed_bot_access_settings this (user_id: UserId, is_access_restricted: bool))
         }
     };
     (@method replace_managed_bot_token $body:ident $ty:ident) => {
@@ -1013,6 +1036,14 @@ macro_rules! requester_forward {
             $body!(get_chat_member this (chat_id: C, user_id: UserId))
         }
     };
+    (@method get_user_personal_chat_messages $body:ident $ty:ident) => {
+        type GetUserPersonalChatMessages = $ty![GetUserPersonalChatMessages];
+
+        fn get_user_personal_chat_messages(&self, user_id: UserId, limit: u8) -> Self::GetUserPersonalChatMessages {
+            let this = self;
+            $body!(get_user_personal_chat_messages this (user_id: UserId, limit: u8))
+        }
+    };
     (@method set_chat_sticker_set $body:ident $ty:ident) => {
         type SetChatStickerSet = $ty![SetChatStickerSet];
 
@@ -1150,6 +1181,14 @@ macro_rules! requester_forward {
         fn get_user_chat_boosts<C>(&self, chat_id: C, user_id: UserId) -> Self::GetUserChatBoosts where C: Into<Recipient> {
             let this = self;
             $body!(get_user_chat_boosts this (chat_id: C, user_id: UserId))
+        }
+    };
+    (@method answer_guest_query $body:ident $ty:ident) => {
+        type AnswerGuestQuery = $ty![AnswerGuestQuery];
+
+        fn answer_guest_query<G>(&self, guest_query_id: G, result: InlineQueryResult) -> Self::AnswerGuestQuery where G: Into<String> {
+            let this = self;
+            $body!(answer_guest_query this (guest_query_id: G, result: InlineQueryResult))
         }
     };
     (@method set_my_commands $body:ident $ty:ident) => {
@@ -1409,6 +1448,22 @@ macro_rules! requester_forward {
         M: IntoIterator<Item = MessageId> {
             let this = self;
             $body!(delete_messages this (chat_id: C, message_ids: M))
+        }
+    };
+    (@method delete_message_reaction $body:ident $ty:ident) => {
+        type DeleteMessageReaction = $ty![DeleteMessageReaction];
+
+        fn delete_message_reaction<C>(&self, chat_id: C, message_id: MessageId) -> Self::DeleteMessageReaction where C: Into<Recipient> {
+            let this = self;
+            $body!(delete_message_reaction this (chat_id: C, message_id: MessageId))
+        }
+    };
+    (@method delete_all_message_reactions $body:ident $ty:ident) => {
+        type DeleteAllMessageReactions = $ty![DeleteAllMessageReactions];
+
+        fn delete_all_message_reactions<C>(&self, chat_id: C) -> Self::DeleteAllMessageReactions where C: Into<Recipient> {
+            let this = self;
+            $body!(delete_all_message_reactions this (chat_id: C))
         }
     };
     (@method send_sticker $body:ident $ty:ident) => {

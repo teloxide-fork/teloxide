@@ -202,6 +202,7 @@ where
         send_message,
         send_message_draft,
         send_photo,
+        send_live_photo,
         send_audio,
         send_document,
         send_video,
@@ -255,6 +256,7 @@ where
         get_chat_members_count,
         get_chat_member_count,
         get_chat_member,
+        get_user_personal_chat_messages,
         set_chat_sticker_set,
         delete_chat_sticker_set,
         get_forum_topic_icon_stickers,
@@ -272,6 +274,7 @@ where
         unpin_all_general_forum_topic_messages,
         answer_callback_query,
         get_user_chat_boosts,
+        answer_guest_query,
         set_my_commands,
         get_business_connection,
         get_my_commands,
@@ -290,6 +293,8 @@ where
         answer_web_app_query,
         save_prepared_inline_message,
         get_managed_bot_token,
+        get_managed_bot_access_settings,
+        set_managed_bot_access_settings,
         replace_managed_bot_token,
         save_prepared_keyboard_button,
         edit_message_text,
@@ -305,6 +310,8 @@ where
         decline_suggested_post,
         delete_message,
         delete_messages,
+        delete_message_reaction,
+        delete_all_message_reactions,
         send_sticker,
         get_sticker_set,
         get_custom_emoji_stickers,
@@ -400,7 +407,6 @@ trait ErasableRequester<'a> {
         &self,
         chat_id: ChatId,
         draft_id: i64,
-        text: String,
     ) -> ErasedRequest<'a, SendMessageDraft, Self::Err>;
 
     fn forward_message(
@@ -436,6 +442,13 @@ trait ErasableRequester<'a> {
         chat_id: Recipient,
         photo: InputFile,
     ) -> ErasedRequest<'a, SendPhoto, Self::Err>;
+
+    fn send_live_photo(
+        &self,
+        chat_id: Recipient,
+        live_photo: InputFile,
+        photo: InputFile,
+    ) -> ErasedRequest<'a, SendLivePhoto, Self::Err>;
 
     fn send_audio(
         &self,
@@ -757,6 +770,12 @@ trait ErasableRequester<'a> {
         user_id: UserId,
     ) -> ErasedRequest<'a, GetChatMember, Self::Err>;
 
+    fn get_user_personal_chat_messages(
+        &self,
+        user_id: UserId,
+        limit: u8,
+    ) -> ErasedRequest<'a, GetUserPersonalChatMessages, Self::Err>;
+
     fn set_chat_sticker_set(
         &self,
         chat_id: Recipient,
@@ -850,6 +869,12 @@ trait ErasableRequester<'a> {
         user_id: UserId,
     ) -> ErasedRequest<'a, GetUserChatBoosts, Self::Err>;
 
+    fn answer_guest_query(
+        &self,
+        guest_query_id: String,
+        result: InlineQueryResult,
+    ) -> ErasedRequest<'a, AnswerGuestQuery, Self::Err>;
+
     fn set_my_commands(
         &self,
         commands: Vec<BotCommand>,
@@ -910,6 +935,17 @@ trait ErasableRequester<'a> {
         &self,
         user_id: UserId,
     ) -> ErasedRequest<'a, GetManagedBotToken, Self::Err>;
+
+    fn get_managed_bot_access_settings(
+        &self,
+        user_id: UserId,
+    ) -> ErasedRequest<'a, GetManagedBotAccessSettings, Self::Err>;
+
+    fn set_managed_bot_access_settings(
+        &self,
+        user_id: UserId,
+        is_access_restricted: bool,
+    ) -> ErasedRequest<'a, SetManagedBotAccessSettings, Self::Err>;
 
     fn replace_managed_bot_token(
         &self,
@@ -999,6 +1035,17 @@ trait ErasableRequester<'a> {
         chat_id: Recipient,
         message_ids: Vec<MessageId>,
     ) -> ErasedRequest<'a, DeleteMessages, Self::Err>;
+
+    fn delete_message_reaction(
+        &self,
+        chat_id: Recipient,
+        message_id: MessageId,
+    ) -> ErasedRequest<'a, DeleteMessageReaction, Self::Err>;
+
+    fn delete_all_message_reactions(
+        &self,
+        chat_id: Recipient,
+    ) -> ErasedRequest<'a, DeleteAllMessageReactions, Self::Err>;
 
     fn send_sticker(
         &self,
@@ -1376,9 +1423,8 @@ where
         &self,
         chat_id: ChatId,
         draft_id: i64,
-        text: String,
     ) -> ErasedRequest<'a, SendMessageDraft, Self::Err> {
-        Requester::send_message_draft(self, chat_id, draft_id, text).erase()
+        Requester::send_message_draft(self, chat_id, draft_id).erase()
     }
 
     fn forward_message(
@@ -1423,6 +1469,15 @@ where
         photo: InputFile,
     ) -> ErasedRequest<'a, SendPhoto, Self::Err> {
         Requester::send_photo(self, chat_id, photo).erase()
+    }
+
+    fn send_live_photo(
+        &self,
+        chat_id: Recipient,
+        live_photo: InputFile,
+        photo: InputFile,
+    ) -> ErasedRequest<'a, SendLivePhoto, Self::Err> {
+        Requester::send_live_photo(self, chat_id, live_photo, photo).erase()
     }
 
     fn send_audio(
@@ -1870,6 +1925,14 @@ where
         Requester::get_chat_member(self, chat_id, user_id).erase()
     }
 
+    fn get_user_personal_chat_messages(
+        &self,
+        user_id: UserId,
+        limit: u8,
+    ) -> ErasedRequest<'a, GetUserPersonalChatMessages, Self::Err> {
+        Requester::get_user_personal_chat_messages(self, user_id, limit).erase()
+    }
+
     fn set_chat_sticker_set(
         &self,
         chat_id: Recipient,
@@ -1997,6 +2060,14 @@ where
         Requester::get_user_chat_boosts(self, chat_id, user_id).erase()
     }
 
+    fn answer_guest_query(
+        &self,
+        guest_query_id: String,
+        result: InlineQueryResult,
+    ) -> ErasedRequest<'a, AnswerGuestQuery, Self::Err> {
+        Requester::answer_guest_query(self, guest_query_id, result).erase()
+    }
+
     fn set_my_commands(
         &self,
         commands: Vec<BotCommand>,
@@ -2092,6 +2163,21 @@ where
         user_id: UserId,
     ) -> ErasedRequest<'a, GetManagedBotToken, Self::Err> {
         Requester::get_managed_bot_token(self, user_id).erase()
+    }
+
+    fn get_managed_bot_access_settings(
+        &self,
+        user_id: UserId,
+    ) -> ErasedRequest<'a, GetManagedBotAccessSettings, Self::Err> {
+        Requester::get_managed_bot_access_settings(self, user_id).erase()
+    }
+
+    fn set_managed_bot_access_settings(
+        &self,
+        user_id: UserId,
+        is_access_restricted: bool,
+    ) -> ErasedRequest<'a, SetManagedBotAccessSettings, Self::Err> {
+        Requester::set_managed_bot_access_settings(self, user_id, is_access_restricted).erase()
     }
 
     fn replace_managed_bot_token(
@@ -2211,6 +2297,21 @@ where
         message_ids: Vec<MessageId>,
     ) -> ErasedRequest<'a, DeleteMessages, Self::Err> {
         Requester::delete_messages(self, chat_id, message_ids).erase()
+    }
+
+    fn delete_message_reaction(
+        &self,
+        chat_id: Recipient,
+        message_id: MessageId,
+    ) -> ErasedRequest<'a, DeleteMessageReaction, Self::Err> {
+        Requester::delete_message_reaction(self, chat_id, message_id).erase()
+    }
+
+    fn delete_all_message_reactions(
+        &self,
+        chat_id: Recipient,
+    ) -> ErasedRequest<'a, DeleteAllMessageReactions, Self::Err> {
+        Requester::delete_all_message_reactions(self, chat_id).erase()
     }
 
     fn send_sticker(

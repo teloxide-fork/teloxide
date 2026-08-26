@@ -169,6 +169,7 @@ macro_rules! define_update_ext {
 
 define_update_ext! {
     (filter_message, UpdateKind::Message, Message),
+    (filter_guest_message, UpdateKind::GuestMessage, GuestMessage),
     (filter_edited_message, UpdateKind::EditedMessage, EditedMessage),
     (filter_channel_post, UpdateKind::ChannelPost, ChannelPost),
     (filter_edited_channel_post, UpdateKind::EditedChannelPost, EditedChannelPost),

@@ -13,12 +13,12 @@ impl_payload! {
             pub chat_id: ChatId [into],
             /// Unique identifier of the message draft; must be non-zero. Changes of drafts with the same identifier are animated
             pub draft_id: i64,
-            /// Text of the message to be sent, 1-4096 characters after entities parsing
-            pub text: String [into],
         }
         optional {
             /// Unique identifier for the target message thread (topic) of the forum; for forum supergroups only
             pub message_thread_id: ThreadId,
+            /// Text of the message to be sent, 1-4096 characters after entities parsing
+            pub text: String [into],
             /// Mode for parsing entities in the message text. See [formatting options] for more details.
             ///
             /// [formatting options]: https://core.telegram.org/bots/api#formatting-options

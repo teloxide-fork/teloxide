@@ -80,6 +80,7 @@ mod tests {
                 has_topics_enabled: false,
                 allows_users_to_create_topics: false,
                 can_manage_bots: false,
+                supports_guest_queries: false,
             },
             can_join_groups: false,
             can_read_all_group_messages: false,

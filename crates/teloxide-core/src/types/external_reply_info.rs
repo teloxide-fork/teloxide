@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::types::{
     Animation, Audio, Chat, Checklist, Contact, Dice, Document, Game, Giveaway, GiveawayWinners,
-    Invoice, LinkPreviewOptions, Location, MessageId, MessageOrigin, PaidMediaInfo, PhotoSize,
-    Poll, Sticker, Story, Venue, Video, VideoNote, Voice,
+    Invoice, LinkPreviewOptions, LivePhoto, Location, MessageId, MessageOrigin, PaidMediaInfo,
+    PhotoSize, Poll, Sticker, Story, Venue, Video, VideoNote, Voice,
 };
 
 /// This object contains information about a message that is being replied to,
@@ -60,8 +60,38 @@ pub enum ExternalReplyInfoKind {
     Story(Story),
     Giveaway(Giveaway),
     GiveawayWinners(GiveawayWinners),
+    LivePhoto(LivePhoto),
     Video(Video),
     VideoNote(VideoNote),
     Voice(Voice),
     Invoice(Invoice),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deserialize_live_photo() {
+        let reply: ExternalReplyInfo = serde_json::from_str(
+            r#"{
+                "origin":{
+                    "type":"user",
+                    "date":0,
+                    "sender_user":{"id":1,"is_bot":false,"first_name":"Sender"}
+                },
+                "message_id":1,
+                "live_photo":{
+                    "file_id":"live-photo",
+                    "file_unique_id":"unique-live-photo",
+                    "width":320,
+                    "height":240,
+                    "duration":3
+                }
+            }"#,
+        )
+        .unwrap();
+
+        assert!(matches!(reply.kind, ExternalReplyInfoKind::LivePhoto(_)));
+    }
 }

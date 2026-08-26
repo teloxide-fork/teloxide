@@ -12,7 +12,7 @@ use crate::types::{
     DirectMessagesTopic, Document, ExternalReplyInfo, ForumTopicClosed, ForumTopicCreated,
     ForumTopicEdited, ForumTopicReopened, Game, GeneralForumTopicHidden, GeneralForumTopicUnhidden,
     GiftInfo, Giveaway, GiveawayCompleted, GiveawayCreated, GiveawayWinners, InlineKeyboardMarkup,
-    Invoice, LinkPreviewOptions, Location, ManagedBotCreated, MaybeInaccessibleMessage,
+    Invoice, LinkPreviewOptions, LivePhoto, Location, ManagedBotCreated, MaybeInaccessibleMessage,
     MessageAutoDeleteTimerChanged, MessageEntity, MessageEntityRef, MessageId, MessageOrigin,
     PaidMediaInfo, PaidMessagePriceChanged, PassportData, PhotoSize, Poll, PollOptionAdded,
     PollOptionDeleted, ProximityAlertTriggered, RefundedPayment, Sticker, Story, SuccessfulPayment,
@@ -80,6 +80,15 @@ pub struct Message {
     /// account. Available only for outgoing messages sent on behalf of the
     /// connected business account.
     pub sender_business_bot: Option<User>,
+
+    /// Unique identifier of the query that resulted in the message.
+    pub guest_query_id: Option<String>,
+
+    /// User that sent the message on behalf of the guest bot.
+    pub guest_bot_caller_user: Option<User>,
+
+    /// Chat that sent the message on behalf of the guest bot.
+    pub guest_bot_caller_chat: Option<Chat>,
 
     #[serde(flatten)]
     pub kind: MessageKind,
@@ -477,11 +486,12 @@ pub enum MediaKind {
     Venue(MediaVenue),
     Location(MediaLocation),
     Photo(MediaPhoto),
-    Poll(MediaPoll),
+    Poll(Box<MediaPoll>),
     Checklist(MediaChecklist),
     Sticker(MediaSticker),
     Story(MediaStory),
     Text(MediaText),
+    LivePhoto(MediaLivePhoto),
     Video(MediaVideo),
     VideoNote(MediaVideoNote),
     Voice(MediaVoice),
@@ -632,6 +642,33 @@ pub struct MediaPhoto {
 
     /// The unique identifier of a media message group this message belongs
     /// to.
+    pub media_group_id: Option<MediaGroupId>,
+}
+
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+pub struct MediaLivePhoto {
+    /// Message is a live photo, information about the file.
+    pub live_photo: LivePhoto,
+
+    /// Caption for the live photo, 0-1024 characters.
+    pub caption: Option<String>,
+
+    /// For messages with a caption, special entities like usernames, URLs,
+    /// bot commands, etc. that appear in the caption.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub caption_entities: Vec<MessageEntity>,
+
+    /// `true`, if the caption must be shown above the message media.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub show_caption_above_media: bool,
+
+    /// `true`, if the message media is covered by a spoiler animation.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub has_media_spoiler: bool,
+
+    /// The unique identifier of a media message group this message belongs to.
     pub media_group_id: Option<MediaGroupId>,
 }
 
@@ -1050,7 +1087,7 @@ mod getters {
     use crate::types::{
         self, message::MessageKind::*, Chat, ChatId, ChatMigration, EffectId, LinkPreviewOptions,
         MaybeInaccessibleMessage, MediaAnimation, MediaAudio, MediaChecklist, MediaContact,
-        MediaDocument, MediaGame, MediaKind, MediaLocation, MediaPaid, MediaPhoto, MediaPoll,
+        MediaDocument, MediaGame, MediaKind, MediaLivePhoto, MediaLocation, MediaPaid, MediaPhoto,
         MediaSticker, MediaStory, MediaText, MediaVenue, MediaVideo, MediaVideoNote, MediaVoice,
         Message, MessageChannelChatCreated, MessageChatOwnerChanged, MessageChatOwnerLeft,
         MessageChatShared, MessageChecklistTasksAdded, MessageChecklistTasksDone, MessageCommon,
@@ -1237,6 +1274,10 @@ mod getters {
                     ..
                 })
                 | Common(MessageCommon {
+                    media_kind: MediaKind::LivePhoto(MediaLivePhoto { media_group_id, .. }),
+                    ..
+                })
+                | Common(MessageCommon {
                     media_kind: MediaKind::Document(MediaDocument { media_group_id, .. }),
                     ..
                 })
@@ -1325,6 +1366,10 @@ mod getters {
                     ..
                 })
                 | Common(MessageCommon {
+                    media_kind: MediaKind::LivePhoto(MediaLivePhoto { caption_entities, .. }),
+                    ..
+                })
+                | Common(MessageCommon {
                     media_kind: MediaKind::Video(MediaVideo { caption_entities, .. }),
                     ..
                 })
@@ -1339,6 +1384,7 @@ mod getters {
         /// Returns `true` if the caption must be shown above the message media.
         ///
         /// Getter for [`MediaPhoto::show_caption_above_media`],
+        /// [`MediaLivePhoto::show_caption_above_media`],
         /// [`MediaVideo::show_caption_above_media`] and
         /// [`MediaAnimation::show_caption_above_media`].
         #[must_use]
@@ -1346,6 +1392,7 @@ mod getters {
             self.common()
                 .map(|m| match m.media_kind {
                     MediaKind::Animation(MediaAnimation { show_caption_above_media, .. })
+                    | MediaKind::LivePhoto(MediaLivePhoto { show_caption_above_media, .. })
                     | MediaKind::Photo(MediaPhoto { show_caption_above_media, .. })
                     | MediaKind::Video(MediaVideo { show_caption_above_media, .. }) => {
                         show_caption_above_media
@@ -1373,6 +1420,7 @@ mod getters {
         /// animation.
         ///
         /// Getter for [`MediaPhoto::has_media_spoiler`],
+        /// [`MediaLivePhoto::has_media_spoiler`],
         /// [`MediaVideo::has_media_spoiler`] and
         /// [`MediaAnimation::has_media_spoiler`].
         #[must_use]
@@ -1380,6 +1428,7 @@ mod getters {
             self.common()
                 .map(|m| match m.media_kind {
                     MediaKind::Animation(MediaAnimation { has_media_spoiler, .. })
+                    | MediaKind::LivePhoto(MediaLivePhoto { has_media_spoiler, .. })
                     | MediaKind::Photo(MediaPhoto { has_media_spoiler, .. })
                     | MediaKind::Video(MediaVideo { has_media_spoiler, .. }) => has_media_spoiler,
                     MediaKind::Audio(_)
@@ -1468,6 +1517,17 @@ mod getters {
         }
 
         #[must_use]
+        pub fn live_photo(&self) -> Option<&types::LivePhoto> {
+            match &self.kind {
+                Common(MessageCommon {
+                    media_kind: MediaKind::LivePhoto(MediaLivePhoto { live_photo, .. }),
+                    ..
+                }) => Some(live_photo),
+                _ => None,
+            }
+        }
+
+        #[must_use]
         pub fn sticker(&self) -> Option<&types::Sticker> {
             match &self.kind {
                 Common(MessageCommon {
@@ -1530,6 +1590,7 @@ mod getters {
                         MediaKind::Animation(MediaAnimation { caption, .. })
                         | MediaKind::Audio(MediaAudio { caption, .. })
                         | MediaKind::Document(MediaDocument { caption, .. })
+                        | MediaKind::LivePhoto(MediaLivePhoto { caption, .. })
                         | MediaKind::Photo(MediaPhoto { caption, .. })
                         | MediaKind::Video(MediaVideo { caption, .. })
                         | MediaKind::Voice(MediaVoice { caption, .. }),
@@ -1575,10 +1636,7 @@ mod getters {
         #[must_use]
         pub fn poll(&self) -> Option<&types::Poll> {
             match &self.kind {
-                Common(MessageCommon {
-                    media_kind: MediaKind::Poll(MediaPoll { poll, .. }),
-                    ..
-                }) => Some(poll),
+                Common(MessageCommon { media_kind: MediaKind::Poll(poll), .. }) => Some(&poll.poll),
                 _ => None,
             }
         }
@@ -2453,6 +2511,33 @@ mod tests {
     use crate::types::*;
 
     #[test]
+    fn de_live_photo_and_guest_message_fields() {
+        let message: Message = from_str(
+            r#"{
+                "message_id":1,
+                "date":0,
+                "chat":{"id":1,"type":"private","first_name":"Guest"},
+                "guest_query_id":"query",
+                "guest_bot_caller_user":{"id":2,"is_bot":false,"first_name":"Caller"},
+                "guest_bot_caller_chat":{"id":2,"type":"private","first_name":"Caller"},
+                "live_photo":{
+                    "file_id":"live-photo",
+                    "file_unique_id":"unique-live-photo",
+                    "width":320,
+                    "height":240,
+                    "duration":3
+                }
+            }"#,
+        )
+        .unwrap();
+
+        assert_eq!(message.guest_query_id.as_deref(), Some("query"));
+        assert_eq!(message.guest_bot_caller_user.as_ref().unwrap().id.0, 2);
+        assert_eq!(message.guest_bot_caller_chat.as_ref().unwrap().id.0, 2);
+        assert!(message.live_photo().is_some());
+    }
+
+    #[test]
     fn de_media_forwarded() {
         let json = r#"{
           "message_id": 198283,
@@ -2533,6 +2618,9 @@ mod tests {
                     }),
                 },
                 sender_business_bot: None,
+                guest_query_id: None,
+                guest_bot_caller_user: None,
+                guest_bot_caller_chat: None,
                 kind: MessageKind::ChatShared(MessageChatShared {
                     chat_shared: ChatShared {
                         request_id: RequestId(348349),
@@ -3157,6 +3245,9 @@ mod tests {
                     },
                     via_bot: None,
                     sender_business_bot: None,
+                    guest_query_id: None,
+                    guest_bot_caller_user: None,
+                    guest_bot_caller_chat: None,
                     suggested_post_info: None,
                     kind: MessageKind::Giveaway(MessageGiveaway {
                         giveaway: Giveaway {
@@ -3274,6 +3365,7 @@ mod tests {
                     has_topics_enabled: false,
                     allows_users_to_create_topics: false,
                     can_manage_bots: false,
+                    supports_guest_queries: false,
                 }],
                 additional_chat_count: None,
                 premium_subscription_month_count: Some(6),

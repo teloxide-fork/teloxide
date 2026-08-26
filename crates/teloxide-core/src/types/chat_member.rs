@@ -202,6 +202,10 @@ pub struct Restricted {
     /// `true` if the user is allowed to send polls.
     pub can_send_polls: bool,
 
+    /// `true` if the user is allowed to react to messages.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub can_react_to_messages: bool,
+
     /// The member's tag.
     pub tag: Option<String>,
 
@@ -745,6 +749,7 @@ mod tests {
                 has_topics_enabled: false,
                 allows_users_to_create_topics: false,
                 can_manage_bots: false,
+                supports_guest_queries: false,
             },
             kind: ChatMemberKind::Administrator(Administrator {
                 custom_title: None,
@@ -815,6 +820,7 @@ mod tests {
                 has_topics_enabled: false,
                 allows_users_to_create_topics: false,
                 can_manage_bots: false,
+                supports_guest_queries: false,
             },
             kind: ChatMemberKind::Restricted(Restricted {
                 is_member: true,
@@ -827,6 +833,7 @@ mod tests {
                 can_send_voice_notes: true,
                 can_manage_topics: false,
                 can_send_polls: true,
+                can_react_to_messages: false,
                 can_send_other_messages: true,
                 can_add_web_page_previews: true,
                 can_change_info: true,
@@ -870,6 +877,17 @@ mod tests {
         };
         assert_eq!(restricted.tag, Some("vip".to_string()));
         assert_eq!(restricted.can_edit_tag, Some(true));
+    }
+
+    #[test]
+    fn restricted_can_react_to_messages() {
+        let json = r#"{"status":"restricted","user":{"id":1,"is_bot":false,"first_name":"a"},"is_member":true,"can_send_messages":true,"can_send_audios":true,"can_send_documents":true,"can_send_photos":true,"can_send_videos":true,"can_send_video_notes":true,"can_send_voice_notes":true,"can_send_other_messages":true,"can_add_web_page_previews":true,"can_change_info":true,"can_invite_users":true,"can_pin_messages":true,"can_manage_topics":true,"can_send_polls":true,"can_react_to_messages":true,"until_date":0}"#;
+        let member: ChatMember = serde_json::from_str(json).unwrap();
+        let ChatMemberKind::Restricted(restricted) = member.kind else {
+            panic!("expected Restricted");
+        };
+
+        assert!(restricted.can_react_to_messages);
     }
 
     #[test]

@@ -8,8 +8,8 @@ use crate::{
         EditMessageCaptionInline, EditMessageChecklist, EditMessageMedia, EditMessageMediaInline,
         EditMessageText, EditMessageTextInline, EditStory, GiftPremiumSubscription, PostStory,
         SavePreparedInlineMessage, SendAnimation, SendAudio, SendChecklist, SendDocument, SendGift,
-        SendGiftChat, SendMediaGroup, SendMessage, SendMessageDraft, SendPaidMedia, SendPhoto,
-        SendPoll, SendVideo, SendVoice,
+        SendGiftChat, SendLivePhoto, SendMediaGroup, SendMessage, SendMessageDraft, SendPaidMedia,
+        SendPhoto, SendPoll, SendVideo, SendVoice,
     },
     prelude::Requester,
     requests::{HasPayload, Output, Request},
@@ -138,6 +138,7 @@ where
     B::SendMessage: Clone,
     B::SendMessageDraft: Clone,
     B::SendPhoto: Clone,
+    B::SendLivePhoto: Clone,
     B::SendVideo: Clone,
     B::SendAudio: Clone,
     B::SendDocument: Clone,
@@ -170,6 +171,7 @@ where
         send_message,
         send_message_draft,
         send_photo,
+        send_live_photo,
         send_video,
         send_audio,
         send_document,
@@ -200,6 +202,8 @@ where
 
     requester_forward! {
         get_managed_bot_token,
+        get_managed_bot_access_settings,
+        set_managed_bot_access_settings,
         replace_managed_bot_token,
         save_prepared_keyboard_button,
         get_me,
@@ -255,6 +259,7 @@ where
         get_chat_members_count,
         get_chat_member_count,
         get_chat_member,
+        get_user_personal_chat_messages,
         set_chat_sticker_set,
         delete_chat_sticker_set,
         get_forum_topic_icon_stickers,
@@ -272,6 +277,7 @@ where
         unpin_all_general_forum_topic_messages,
         answer_callback_query,
         get_user_chat_boosts,
+        answer_guest_query,
         set_my_commands,
         get_business_connection,
         get_my_commands,
@@ -293,6 +299,8 @@ where
         decline_suggested_post,
         delete_message,
         delete_messages,
+        delete_message_reaction,
+        delete_all_message_reactions,
         send_sticker,
         get_sticker_set,
         get_custom_emoji_stickers,
@@ -391,6 +399,7 @@ impl_visit_parse_modes! {
     SendMessage => [parse_mode],
     SendMessageDraft => [parse_mode],
     SendPhoto => [parse_mode],
+    SendLivePhoto => [parse_mode],
     SendVideo => [parse_mode],
     SendAudio => [parse_mode],
     SendDocument => [parse_mode],
@@ -409,7 +418,32 @@ impl_visit_parse_modes! {
     CopyMessage => [parse_mode],
     PostStory => [parse_mode],
     EditStory => [parse_mode],
-    SendPoll => [explanation_parse_mode],
+}
+
+impl VisitParseModes for SendPoll {
+    fn visit_parse_modes(&mut self, mut visitor: impl FnMut(&mut Option<ParseMode>)) {
+        if self.question_entities.is_none() {
+            visitor(&mut self.question_parse_mode);
+        }
+
+        self.options
+            .iter_mut()
+            .for_each(|option| visit_parse_modes_in_input_poll_option(option, &mut visitor));
+
+        if self.explanation_entities.is_none() {
+            visitor(&mut self.explanation_parse_mode);
+        }
+        if let Some(media) = &mut self.explanation_media {
+            visit_parse_modes_in_input_poll_media(media, &mut visitor);
+        }
+
+        if self.description_entities.is_none() {
+            visitor(&mut self.description_parse_mode);
+        }
+        if let Some(media) = &mut self.media {
+            visit_parse_modes_in_input_poll_media(media, &mut visitor);
+        }
+    }
 }
 
 impl VisitParseModes for AnswerInlineQuery {
@@ -528,7 +562,212 @@ fn visit_parse_modes_in_input_media(
         Animation(m) => &mut m.parse_mode,
         Audio(m) => &mut m.parse_mode,
         Document(m) => &mut m.parse_mode,
+        LivePhoto(m) => &mut m.parse_mode,
     };
 
     visitor(parse_mode);
+}
+
+fn visit_parse_modes_in_input_poll_option(
+    option: &mut InputPollOption,
+    visitor: &mut impl FnMut(&mut Option<ParseMode>),
+) {
+    use InputPollOptionFormatting::*;
+
+    match &mut option.formatting {
+        Some(TextParseMode(_)) | Some(TextEntities(_)) => {}
+        None => {
+            let mut parse_mode = None;
+            visitor(&mut parse_mode);
+            option.formatting = parse_mode.map(TextParseMode);
+        }
+    }
+
+    if let Some(media) = &mut option.media {
+        visit_parse_modes_in_input_poll_option_media(media, visitor);
+    }
+}
+
+fn visit_parse_modes_in_input_poll_media(
+    media: &mut InputPollMedia,
+    visitor: &mut impl FnMut(&mut Option<ParseMode>),
+) {
+    use InputPollMedia::*;
+
+    match media {
+        Animation(media) => visit_parse_mode_in_input_media_caption(
+            &mut media.parse_mode,
+            &media.caption_entities,
+            visitor,
+        ),
+        Audio(media) => visit_parse_mode_in_input_media_caption(
+            &mut media.parse_mode,
+            &media.caption_entities,
+            visitor,
+        ),
+        Document(media) => visit_parse_mode_in_input_media_caption(
+            &mut media.parse_mode,
+            &media.caption_entities,
+            visitor,
+        ),
+        LivePhoto(media) => visit_parse_mode_in_input_media_caption(
+            &mut media.parse_mode,
+            &media.caption_entities,
+            visitor,
+        ),
+        Photo(media) => visit_parse_mode_in_input_media_caption(
+            &mut media.parse_mode,
+            &media.caption_entities,
+            visitor,
+        ),
+        Video(media) => visit_parse_mode_in_input_media_caption(
+            &mut media.parse_mode,
+            &media.caption_entities,
+            visitor,
+        ),
+        Location(_) | Venue(_) => {}
+    }
+}
+
+fn visit_parse_modes_in_input_poll_option_media(
+    media: &mut InputPollOptionMedia,
+    visitor: &mut impl FnMut(&mut Option<ParseMode>),
+) {
+    use InputPollOptionMedia::*;
+
+    match media {
+        Animation(media) => visit_parse_mode_in_input_media_caption(
+            &mut media.parse_mode,
+            &media.caption_entities,
+            visitor,
+        ),
+        LivePhoto(media) => visit_parse_mode_in_input_media_caption(
+            &mut media.parse_mode,
+            &media.caption_entities,
+            visitor,
+        ),
+        Photo(media) => visit_parse_mode_in_input_media_caption(
+            &mut media.parse_mode,
+            &media.caption_entities,
+            visitor,
+        ),
+        Video(media) => visit_parse_mode_in_input_media_caption(
+            &mut media.parse_mode,
+            &media.caption_entities,
+            visitor,
+        ),
+        Location(_) | Sticker(_) | Venue(_) => {}
+    }
+}
+
+fn visit_parse_mode_in_input_media_caption(
+    parse_mode: &mut Option<ParseMode>,
+    caption_entities: &Option<Vec<MessageEntity>>,
+    visitor: &mut impl FnMut(&mut Option<ParseMode>),
+) {
+    if caption_entities.is_none() {
+        visitor(parse_mode);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn set_default_parse_mode(parse_mode: &mut Option<ParseMode>) {
+        _ = parse_mode.get_or_insert(ParseMode::Html);
+    }
+
+    fn media() -> InputFile {
+        InputFile::file_id("media".into())
+    }
+
+    #[test]
+    fn send_poll_visits_new_text_parse_modes() {
+        let mut poll = SendPoll::new(
+            ChatId(1),
+            "question",
+            [InputPollOption::new("option"), InputPollOption::new("second")],
+        );
+
+        poll.visit_parse_modes(set_default_parse_mode);
+
+        assert_eq!(poll.question_parse_mode, Some(ParseMode::Html));
+        assert_eq!(poll.description_parse_mode, Some(ParseMode::Html));
+        assert!(matches!(
+            poll.options[0].formatting,
+            Some(InputPollOptionFormatting::TextParseMode(ParseMode::Html))
+        ));
+    }
+
+    #[test]
+    fn send_poll_visits_new_media_caption_parse_modes() {
+        let mut poll = SendPoll::new(
+            ChatId(1),
+            "question",
+            [InputPollOption::new("option")
+                .media(InputPollOptionMedia::Photo(InputMediaPhoto::new(media())))],
+        );
+        poll.explanation_media = Some(InputPollMedia::Audio(InputMediaAudio::new(media())));
+        poll.media = Some(InputPollMedia::Video(InputMediaVideo::new(media())));
+
+        poll.visit_parse_modes(set_default_parse_mode);
+
+        let Some(InputPollOptionMedia::Photo(option_media)) = &poll.options[0].media else {
+            panic!("expected photo option media");
+        };
+        assert_eq!(option_media.parse_mode, Some(ParseMode::Html));
+        let Some(InputPollMedia::Audio(explanation_media)) = &poll.explanation_media else {
+            panic!("expected audio explanation media");
+        };
+        assert_eq!(explanation_media.parse_mode, Some(ParseMode::Html));
+        let Some(InputPollMedia::Video(media)) = &poll.media else {
+            panic!("expected video poll media");
+        };
+        assert_eq!(media.parse_mode, Some(ParseMode::Html));
+    }
+
+    #[test]
+    fn send_poll_does_not_set_parse_modes_when_entities_are_explicit() {
+        let entities = vec![];
+        let mut poll = SendPoll::new(
+            ChatId(1),
+            "question",
+            [InputPollOption::new("option").text_entities(entities.clone()).media(
+                InputPollOptionMedia::Photo(
+                    InputMediaPhoto::new(media()).caption_entities(entities.clone()),
+                ),
+            )],
+        );
+        poll.question_entities = Some(entities.clone());
+        poll.explanation_entities = Some(entities.clone());
+        poll.description_entities = Some(entities.clone());
+        poll.explanation_media = Some(InputPollMedia::Audio(
+            InputMediaAudio::new(media()).caption_entities(entities.clone()),
+        ));
+        poll.media =
+            Some(InputPollMedia::Video(InputMediaVideo::new(media()).caption_entities(entities)));
+
+        poll.visit_parse_modes(set_default_parse_mode);
+
+        assert_eq!(poll.question_parse_mode, None);
+        assert_eq!(poll.explanation_parse_mode, None);
+        assert_eq!(poll.description_parse_mode, None);
+        assert!(matches!(
+            poll.options[0].formatting,
+            Some(InputPollOptionFormatting::TextEntities(_))
+        ));
+        let Some(InputPollOptionMedia::Photo(option_media)) = &poll.options[0].media else {
+            panic!("expected photo option media");
+        };
+        assert_eq!(option_media.parse_mode, None);
+        let Some(InputPollMedia::Audio(explanation_media)) = &poll.explanation_media else {
+            panic!("expected audio explanation media");
+        };
+        assert_eq!(explanation_media.parse_mode, None);
+        let Some(InputPollMedia::Video(media)) = &poll.media else {
+            panic!("expected video poll media");
+        };
+        assert_eq!(media.parse_mode, None);
+    }
 }

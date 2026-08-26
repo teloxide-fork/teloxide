@@ -4,22 +4,22 @@ use chrono::{DateTime, Utc};
 use serde::Serialize;
 
 use crate::types::{
-    BusinessConnectionId, EffectId, InputPollOption, Message, MessageEntity, ParseMode, PollType,
-    Recipient, ReplyMarkup, ReplyParameters, ThreadId,
+    BusinessConnectionId, EffectId, InputPollMedia, InputPollOption, Message, MessageEntity,
+    ParseMode, PollType, Recipient, ReplyMarkup, ReplyParameters, ThreadId,
 };
 
 impl_payload! {
     /// Use this method to send a native poll. On success, the sent [`Message`] is returned.
     ///
     /// [`Message`]: crate::types::Message
-    #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize)]
+    #[derive(Debug, Clone, Serialize)]
     pub SendPoll (SendPollSetters) => Message {
         required {
             /// Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)
             pub chat_id: Recipient [into],
             /// Poll question, 1-300 characters
             pub question: String [into],
-            /// A JSON-serialized list of 2-10 answer options
+            /// A JSON-serialized list of 1-12 answer options
             pub options: Vec<InputPollOption> [collect],
         }
         optional {
@@ -40,8 +40,6 @@ impl_payload! {
             pub type_: PollType,
             /// True, if the poll allows multiple answers, defaults to False
             pub allows_multiple_answers: bool,
-            /// 0-based identifiers of the correct answer options, required for polls in quiz mode
-            pub correct_option_ids: Vec<u8> [collect],
             /// Pass True if the poll allows to change the chosen answer options
             pub allows_revoting: bool,
             /// Pass True if the poll options must be shown in random order
@@ -50,6 +48,14 @@ impl_payload! {
             pub allow_adding_options: bool,
             /// Pass True if poll results must be shown only after the poll closes
             pub hide_results_until_closes: bool,
+            /// Pass _True_, if voting is limited to users who have been members of the chat where the poll is being sent for more than 24 hours; for channel chats only
+            pub members_only: bool,
+            /// A JSON-serialized list of 0-12 two-letter [ISO 3166-1 alpha-2] country codes indicating the countries from which users can vote in the poll; for channel chats only. Use “FT” as a country code to allow users with anonymous numbers to vote. If omitted or empty, then users from any country can participate in the poll.
+            ///
+            /// [ISO 3166-1 alpha-2]: https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+            pub country_codes: Vec<String> [collect],
+            /// A JSON-serialized list of monotonically increasing 0-based identifiers of the correct answer options, required for polls in quiz mode
+            pub correct_option_ids: Vec<u8> [collect],
             /// Text that is shown when a user chooses an incorrect answer or taps on the lamp icon in a quiz-style poll, 0-200 characters with at most 2 line feeds after entities parsing
             pub explanation: String [into],
             /// Mode for parsing entities in the message text. See [formatting options] for more details.
@@ -58,6 +64,8 @@ impl_payload! {
             pub explanation_parse_mode: ParseMode,
             /// List of special entities that appear in the poll explanation, which can be specified instead of _parse\_mode_
             pub explanation_entities: Vec<MessageEntity> [collect],
+            /// Media added to the quiz explanation
+            pub explanation_media: InputPollMedia,
             /// Description of the poll to be sent, 0-1024 characters after entities parsing
             pub description: String [into],
             /// Mode for parsing entities in the poll description. See [formatting options] for more details.
@@ -66,6 +74,8 @@ impl_payload! {
             pub description_parse_mode: ParseMode,
             /// A JSON-serialized list of special entities that appear in the poll description, which can be specified instead of description_parse_mode
             pub description_entities: Vec<MessageEntity> [collect],
+            /// Media added to the poll description
+            pub media: InputPollMedia,
             /// Amount of time in seconds the poll will be active after creation, 5-2628000. Can't be used together with close_date.
             pub open_period: u16,
             /// Point in time (Unix timestamp) when the poll will be automatically closed. Must be at least 5 and no more than 2628000 seconds in the future. Can't be used together with open_period.

@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Support for TBA 10.0
+  - Guest mode: guest message updates and `answer_guest_query`
+  - Message-reaction management and the `can_react_to_messages` permission
+  - Poll media, members-only polls, country restrictions, and explanation media
+  - Live photos in messages and supported media inputs, plus `send_live_photo`
+  - Managed-bot access settings and their associated methods
+  - `get_user_personal_chat_messages` for retrieving personal-chat messages
 - Support for TBA 9.6
   - Managed bots: `get_managed_bot_token`, `replace_managed_bot_token`, `save_prepared_keyboard_button`, `KeyboardButtonRequestManagedBot`, `ManagedBotCreated`, `ManagedBotUpdated`, and `User::can_manage_bots`
   - `Poll::correct_option_id` was replaced with `Poll::correct_option_ids` (`Vec<u8>`) [**BC**]

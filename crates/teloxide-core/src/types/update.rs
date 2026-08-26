@@ -52,6 +52,10 @@ pub enum UpdateKind {
     /// New incoming message of any kind — text, photo, sticker, etc.
     Message(Message),
 
+    /// New incoming message of any kind — text, photo, sticker, etc. — from a
+    /// guest.
+    GuestMessage(Message),
+
     /// New version of a message that is known to the bot and was edited.
     EditedMessage(Message),
 
@@ -183,7 +187,8 @@ impl Update {
             | ChannelPost(m)
             | EditedChannelPost(m)
             | BusinessMessage(m)
-            | EditedBusinessMessage(m) => m.from.as_ref()?,
+            | EditedBusinessMessage(m)
+            | GuestMessage(m) => m.from.as_ref()?,
 
             BusinessConnection(conn) => &conn.user,
 
@@ -252,7 +257,8 @@ impl Update {
             | UpdateKind::ChannelPost(message)
             | UpdateKind::EditedChannelPost(message)
             | UpdateKind::BusinessMessage(message)
-            | UpdateKind::EditedBusinessMessage(message) => i0(message.mentioned_users()),
+            | UpdateKind::EditedBusinessMessage(message)
+            | UpdateKind::GuestMessage(message) => i0(message.mentioned_users()),
 
             UpdateKind::MessageReaction(answer) => {
                 if let Some(user) = answer.user() {
@@ -313,7 +319,8 @@ impl Update {
             | ChannelPost(m)
             | EditedChannelPost(m)
             | BusinessMessage(m)
-            | EditedBusinessMessage(m) => &m.chat,
+            | EditedBusinessMessage(m)
+            | GuestMessage(m) => &m.chat,
             CallbackQuery(q) => q.message.as_ref()?.chat(),
             ChatMember(m) => &m.chat,
             MyChatMember(m) => &m.chat,
@@ -386,6 +393,9 @@ impl<'de> Deserialize<'de> for UpdateKind {
                     .flatten()
                     .and_then(|key| match key {
                         "message" => map.next_value::<Message>().ok().map(UpdateKind::Message),
+                        "guest_message" => {
+                            map.next_value::<Message>().ok().map(UpdateKind::GuestMessage)
+                        }
                         "edited_message" => {
                             map.next_value::<Message>().ok().map(UpdateKind::EditedMessage)
                         }
@@ -482,6 +492,9 @@ impl Serialize for UpdateKind {
         let name = "UpdateKind";
         match self {
             UpdateKind::Message(v) => s.serialize_newtype_variant(name, 0, "message", v),
+            UpdateKind::GuestMessage(v) => {
+                s.serialize_newtype_variant(name, 24, "guest_message", v)
+            }
             UpdateKind::EditedMessage(v) => {
                 s.serialize_newtype_variant(name, 1, "edited_message", v)
             }
@@ -607,6 +620,7 @@ mod test {
                     has_topics_enabled: false,
                     allows_users_to_create_topics: false,
                     can_manage_bots: false,
+                    supports_guest_queries: false,
                 }),
                 sender_chat: None,
                 is_topic_message: false,
@@ -622,6 +636,9 @@ mod test {
                     }),
                 },
                 sender_business_bot: None,
+                guest_query_id: None,
+                guest_bot_caller_user: None,
+                guest_bot_caller_chat: None,
                 direct_messages_topic: None,
                 kind: MessageKind::Common(MessageCommon {
                     reply_to_message: None,
@@ -662,6 +679,35 @@ mod test {
     }
 
     #[test]
+    fn guest_message() {
+        let json = r#"{
+            "update_id": 892252935,
+            "guest_message": {
+                "message_id": 1,
+                "from": {
+                    "id": 1,
+                    "is_bot": false,
+                    "first_name": "Guest"
+                },
+                "chat": {
+                    "id": 1,
+                    "first_name": "Guest",
+                    "type": "private"
+                },
+                "date": 0,
+                "text": "hello"
+            }
+        }"#;
+
+        let update = serde_json::from_str::<Update>(json).unwrap();
+        let UpdateKind::GuestMessage(message) = update.kind else {
+            panic!("Expected `GuestMessage`");
+        };
+
+        assert_eq!(message.text(), Some("hello"));
+    }
+
+    #[test]
     fn issue_1107() {
         let update = r#"{
             "message": {
@@ -693,10 +739,10 @@ mod test {
         }"#;
 
         let Update { kind, .. } = serde_json::from_str::<Update>(update).unwrap();
-        match kind {
-            UpdateKind::Message(_) => {}
-            _ => panic!("Expected `Message`"),
-        }
+        let UpdateKind::Message(message) = kind else {
+            panic!("Expected `Message`");
+        };
+        assert!(message.story().is_some());
 
         let update = r#"{
             "message": {
@@ -754,10 +800,11 @@ mod test {
         }"#;
 
         let Update { kind, .. } = serde_json::from_str::<Update>(update).unwrap();
-        match kind {
-            UpdateKind::Message(_) => {}
-            _ => panic!("Expected `Message`"),
-        }
+        let UpdateKind::Message(message) = kind else {
+            panic!("Expected `Message`");
+        };
+        assert_eq!(message.text(), Some("/report"));
+        assert!(message.reply_to_message().is_some_and(|reply| reply.story().is_some()));
     }
 
     #[test]
@@ -971,6 +1018,7 @@ mod test {
                     has_topics_enabled: false,
                     allows_users_to_create_topics: false,
                     can_manage_bots: false,
+                    supports_guest_queries: false,
                 }),
                 date: DateTime::from_timestamp(1721306082, 0).unwrap(),
                 old_reaction: vec![],
@@ -1154,6 +1202,7 @@ mod test {
                             has_topics_enabled: false,
                             allows_users_to_create_topics: false,
                             can_manage_bots: false,
+                            supports_guest_queries: false,
                         },
                     }),
                 },
@@ -1217,6 +1266,7 @@ mod test {
                         has_topics_enabled: false,
                         allows_users_to_create_topics: false,
                         can_manage_bots: false,
+                        supports_guest_queries: false,
                     },
                 }),
             }),
