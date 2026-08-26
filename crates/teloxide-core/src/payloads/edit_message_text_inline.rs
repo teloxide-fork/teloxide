@@ -2,7 +2,9 @@
 
 use serde::Serialize;
 
-use crate::types::{BusinessConnectionId, InlineKeyboardMarkup, MessageEntity, ParseMode, True};
+use crate::types::{
+    BusinessConnectionId, InlineKeyboardMarkup, InputRichMessage, MessageEntity, ParseMode, True,
+};
 
 impl_payload! {
     /// Use this method to edit text and [games] messages. On success, _True_ is returned. Note that business messages that were not sent by the bot and do not contain an inline keyboard can only be edited within **48 hours** from the time they were sent.
@@ -15,10 +17,12 @@ impl_payload! {
         required {
             /// Identifier of the inline message
             pub inline_message_id: String [into],
-            /// New text of the message, 1-4096 characters after entities parsing
-            pub text: String [into],
         }
         optional {
+            /// New text of the message, 1-4096 characters after entities parsing; required if `rich_message` isn't specified
+            pub text: String [into],
+            /// New rich content of the message; required if `text` isn't specified
+            pub rich_message: InputRichMessage,
             /// Unique identifier of the business connection on behalf of which the message to be edited was sent
             pub business_connection_id: BusinessConnectionId,
             /// Mode for parsing entities in the message text. See [formatting options] for more details.

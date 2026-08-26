@@ -149,6 +149,8 @@ mod send_message_draft;
 mod send_paid_media;
 mod send_photo;
 mod send_poll;
+mod send_rich_message;
+mod send_rich_message_draft;
 mod send_sticker;
 mod send_venue;
 mod send_video;
@@ -368,6 +370,8 @@ pub use send_message_draft::{SendMessageDraft, SendMessageDraftSetters};
 pub use send_paid_media::{SendPaidMedia, SendPaidMediaSetters};
 pub use send_photo::{SendPhoto, SendPhotoSetters};
 pub use send_poll::{SendPoll, SendPollSetters};
+pub use send_rich_message::{SendRichMessage, SendRichMessageSetters};
+pub use send_rich_message_draft::{SendRichMessageDraft, SendRichMessageDraftSetters};
 pub use send_sticker::{SendSticker, SendStickerSetters};
 pub use send_venue::{SendVenue, SendVenueSetters};
 pub use send_video::{SendVideo, SendVideoSetters};
@@ -502,3 +506,79 @@ fn codegen_setters_reexports() {
 
 #[cfg(test)]
 mod codegen;
+
+#[cfg(test)]
+mod rich_message_tests {
+    use crate::{
+        payloads::{
+            setters::*, EditMessageText, EditMessageTextInline, SendRichMessage,
+            SendRichMessageDraft,
+        },
+        types::{ChatId, InputRichMessage, MessageId, Recipient},
+    };
+
+    fn input_rich_message() -> InputRichMessage {
+        InputRichMessage {
+            html: Some("<b>hi</b>".to_owned()),
+            markdown: None,
+            is_rtl: None,
+            skip_entity_detection: None,
+        }
+    }
+
+    #[test]
+    fn send_rich_message_serialize() {
+        let payload = SendRichMessage::new(Recipient::Id(ChatId(42)), input_rich_message());
+        let json = serde_json::to_value(&payload).unwrap();
+
+        assert_eq!(json["chat_id"], 42);
+        assert_eq!(json["rich_message"]["html"], "<b>hi</b>");
+    }
+
+    #[test]
+    fn send_rich_message_draft_serialize() {
+        let payload = SendRichMessageDraft::new(ChatId(42), 7, input_rich_message());
+        let json = serde_json::to_value(&payload).unwrap();
+
+        assert_eq!(json["chat_id"], 42);
+        assert_eq!(json["draft_id"], 7);
+        assert_eq!(json["rich_message"]["html"], "<b>hi</b>");
+    }
+
+    #[test]
+    fn edit_message_text_text_only_serialize() {
+        let payload = EditMessageText::new(Recipient::Id(ChatId(42)), MessageId(1)).text("hello");
+        let json = serde_json::to_value(&payload).unwrap();
+
+        assert_eq!(json["text"], "hello");
+        assert!(json.get("rich_message").is_none());
+    }
+
+    #[test]
+    fn edit_message_text_rich_message_only_serialize() {
+        let payload = EditMessageText::new(Recipient::Id(ChatId(42)), MessageId(1))
+            .rich_message(input_rich_message());
+        let json = serde_json::to_value(&payload).unwrap();
+
+        assert!(json.get("text").is_none());
+        assert_eq!(json["rich_message"]["html"], "<b>hi</b>");
+    }
+
+    #[test]
+    fn edit_message_text_inline_text_only_serialize() {
+        let payload = EditMessageTextInline::new("inline_id").text("hello");
+        let json = serde_json::to_value(&payload).unwrap();
+
+        assert_eq!(json["text"], "hello");
+        assert!(json.get("rich_message").is_none());
+    }
+
+    #[test]
+    fn edit_message_text_inline_rich_message_only_serialize() {
+        let payload = EditMessageTextInline::new("inline_id").rich_message(input_rich_message());
+        let json = serde_json::to_value(&payload).unwrap();
+
+        assert!(json.get("text").is_none());
+        assert_eq!(json["rich_message"]["html"], "<b>hi</b>");
+    }
+}

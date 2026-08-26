@@ -154,7 +154,7 @@ where
     where
         T: Into<String>,
     {
-        self.edit_message_text(message.chat.id, message.id, text)
+        self.edit_message_text(message.chat.id, message.id).text(text)
     }
 
     fn edit_caption(&self, message: &Message) -> Self::EditMessageCaption {

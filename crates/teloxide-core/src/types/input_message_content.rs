@@ -1,7 +1,10 @@
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 
-use crate::types::{LabeledPrice, LinkPreviewOptions, LivePeriod, MessageEntity, ParseMode};
+use crate::types::{
+    InputMessageContentRichMessage, LabeledPrice, LinkPreviewOptions, LivePeriod, MessageEntity,
+    ParseMode,
+};
 
 /// This object represents the content of a message to be sent as a result of an
 /// inline query.
@@ -12,10 +15,18 @@ use crate::types::{LabeledPrice, LinkPreviewOptions, LivePeriod, MessageEntity, 
 #[serde(untagged)]
 pub enum InputMessageContent {
     Text(InputMessageContentText),
-    Location(InputMessageContentLocation),
+    // Note:
+    // - `Venue` must be in front of `Location`
+    //
+    // This is needed so serde doesn't parse `Venue` as `Location`, since `Venue`'s required
+    // fields (`latitude`, `longitude`, `title`, `address`) are a superset of `Location`'s
+    // (`latitude`, `longitude`) — matching the same `Venue`/`Location` ordering precedent in
+    // `MediaKind` (message.rs).
     Venue(InputMessageContentVenue),
+    Location(InputMessageContentLocation),
     Contact(InputMessageContentContact),
     Invoice(InputMessageContentInvoice),
+    RichMessage(InputMessageContentRichMessage),
 }
 /// Represents the content of a text message to be sent as the result of an
 /// inline query.
@@ -592,6 +603,8 @@ impl InputMessageContentInvoice {
 
 #[cfg(test)]
 mod tests {
+    use crate::types::InputRichMessage;
+
     use super::*;
 
     #[test]
@@ -661,5 +674,60 @@ mod tests {
 
         let actual_json = serde_json::to_string(&contact_content).unwrap();
         assert_eq!(expected_json, actual_json);
+    }
+
+    #[test]
+    fn rich_message_serialize() {
+        let expected_json = r#"{"rich_message":{"html":"<b>hi</b>"}}"#;
+        let rich_message_content =
+            InputMessageContent::RichMessage(InputMessageContentRichMessage {
+                rich_message: InputRichMessage {
+                    html: Some("<b>hi</b>".to_owned()),
+                    markdown: None,
+                    is_rtl: None,
+                    skip_entity_detection: None,
+                },
+            });
+
+        let actual_json = serde_json::to_string(&rich_message_content).unwrap();
+        assert_eq!(expected_json, actual_json);
+    }
+
+    /// Round-trip (serialize → deserialize) across all 6 `InputMessageContent`
+    /// variants — guards the untagged-enum insertion of `RichMessage` against
+    /// shadowing/being-shadowed-by adjacent variants, and confirms the
+    /// `Venue`-before-`Location` ordering fix resolves `Venue` payloads
+    /// correctly (previously a pre-existing, unrelated bug: `Location`
+    /// appeared first and `Venue`'s required fields are a superset of
+    /// `Location`'s, so untagged resolution always picked `Location` first).
+    #[test]
+    fn round_trip_all_variants() {
+        let variants = vec![
+            InputMessageContent::Text(InputMessageContentText::new("hi")),
+            InputMessageContent::Location(InputMessageContentLocation::new(1.0, 2.0)),
+            InputMessageContent::Venue(InputMessageContentVenue::new(1.0, 2.0, "title", "address")),
+            InputMessageContent::Contact(InputMessageContentContact::new("+123", "Jhon")),
+            InputMessageContent::Invoice(InputMessageContentInvoice::new::<_, _, _, (), _, _>(
+                "title",
+                "description",
+                "payload",
+                "USD",
+                vec![LabeledPrice { label: "item".to_owned(), amount: 100 }],
+            )),
+            InputMessageContent::RichMessage(InputMessageContentRichMessage {
+                rich_message: InputRichMessage {
+                    html: Some("<b>hi</b>".to_owned()),
+                    markdown: None,
+                    is_rtl: None,
+                    skip_entity_detection: None,
+                },
+            }),
+        ];
+
+        for variant in variants {
+            let json = serde_json::to_string(&variant).unwrap();
+            let deserialized: InputMessageContent = serde_json::from_str(&json).unwrap();
+            assert_eq!(variant, deserialized, "round-trip failed for json: {json}");
+        }
     }
 }

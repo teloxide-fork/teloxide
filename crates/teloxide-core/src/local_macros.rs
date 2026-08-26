@@ -487,6 +487,22 @@ macro_rules! requester_forward {
             $body!(send_message_draft this (chat_id: C, draft_id: i64))
         }
     };
+    (@method send_rich_message $body:ident $ty:ident) => {
+        type SendRichMessage = $ty![SendRichMessage];
+
+        fn send_rich_message<C>(&self, chat_id: C, rich_message: InputRichMessage) -> Self::SendRichMessage where C: Into<Recipient> {
+            let this = self;
+            $body!(send_rich_message this (chat_id: C, rich_message: InputRichMessage))
+        }
+    };
+    (@method send_rich_message_draft $body:ident $ty:ident) => {
+        type SendRichMessageDraft = $ty![SendRichMessageDraft];
+
+        fn send_rich_message_draft<C>(&self, chat_id: C, draft_id: i64, rich_message: InputRichMessage) -> Self::SendRichMessageDraft where C: Into<ChatId> {
+            let this = self;
+            $body!(send_rich_message_draft this (chat_id: C, draft_id: i64, rich_message: InputRichMessage))
+        }
+    };
     (@method forward_message $body:ident $ty:ident) => {
         type ForwardMessage = $ty![ForwardMessage];
 
@@ -1363,19 +1379,17 @@ macro_rules! requester_forward {
     (@method edit_message_text $body:ident $ty:ident) => {
         type EditMessageText = $ty![EditMessageText];
 
-        fn edit_message_text<C, T>(&self, chat_id: C, message_id: MessageId, text: T) -> Self::EditMessageText where C: Into<Recipient>,
-        T: Into<String> {
+        fn edit_message_text<C>(&self, chat_id: C, message_id: MessageId) -> Self::EditMessageText where C: Into<Recipient> {
             let this = self;
-            $body!(edit_message_text this (chat_id: C, message_id: MessageId, text: T))
+            $body!(edit_message_text this (chat_id: C, message_id: MessageId))
         }
     };
     (@method edit_message_text_inline $body:ident $ty:ident) => {
         type EditMessageTextInline = $ty![EditMessageTextInline];
 
-        fn edit_message_text_inline<I, T>(&self, inline_message_id: I, text: T) -> Self::EditMessageTextInline where I: Into<String>,
-        T: Into<String> {
+        fn edit_message_text_inline<I>(&self, inline_message_id: I) -> Self::EditMessageTextInline where I: Into<String> {
             let this = self;
-            $body!(edit_message_text_inline this (inline_message_id: I, text: T))
+            $body!(edit_message_text_inline this (inline_message_id: I))
         }
     };
     (@method edit_message_caption $body:ident $ty:ident) => {

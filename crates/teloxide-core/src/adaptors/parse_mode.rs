@@ -216,6 +216,8 @@ where
         forward_message,
         forward_messages,
         copy_messages,
+        send_rich_message,
+        send_rich_message_draft,
         send_video_note,
         send_location,
         edit_message_live_location,

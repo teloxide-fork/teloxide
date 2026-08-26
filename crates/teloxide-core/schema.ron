@@ -357,6 +357,116 @@ Schema(
             ],
         ),
         Method(
+            names: ("sendRichMessage", "SendRichMessage", "send_rich_message"),
+            return_ty: RawTy("Message"),
+            doc: Doc(
+                md: "Use this method to send rich messages. If the message contains a block with a media element, the bot must have the right to send that media to the chat. On success, the sent [Message] is returned.",
+                md_links: {"Message": "https://core.telegram.org/bots/api#message"},
+            ),
+            tg_doc: "https://core.telegram.org/bots/api#sendrichmessage",
+            tg_category: "Available methods",
+            params: [
+                Param(
+                    name: "business_connection_id",
+                    ty: Option(RawTy("BusinessConnectionId")),
+                    descr: Doc(md: "Unique identifier of the business connection on behalf of which the message will be sent"),
+                ),
+                Param(
+                    name: "chat_id",
+                    ty: RawTy("Recipient"),
+                    descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)")
+                ),
+                Param(
+                    name: "message_thread_id",
+                    ty: Option(RawTy("ThreadId")),
+                    descr: Doc(md: "Unique identifier for the target message thread (topic) of the forum; for forum supergroups only"),
+                ),
+                Param(
+                    name: "direct_messages_topic_id",
+                    ty: Option(RawTy("TopicId")),
+                    descr: Doc(md: "Identifier of the direct messages topic to which the message will be sent; required if the message is sent to a direct messages chat"),
+                ),
+                Param(
+                    name: "rich_message",
+                    ty: RawTy("InputRichMessage"),
+                    descr: Doc(md: "The message to be sent"),
+                ),
+                Param(
+                    name: "disable_notification",
+                    ty: Option(bool),
+                    descr: Doc(
+                        md: "Sends the message [silently]. Users will receive a notification with no sound.",
+                        md_links: {"silently": "https://telegram.org/blog/channels-2-0#silent-messages"}
+                    )
+                ),
+                Param(
+                    name: "protect_content",
+                    ty: Option(bool),
+                    descr: Doc(md: "Protects the contents of sent messages from forwarding and saving"),
+                ),
+                Param(
+                    name: "allow_paid_broadcast",
+                    ty: Option(bool),
+                    descr: Doc(md: "Pass `true` to allow up to 1000 messages per second, ignoring broadcasting limits for a fee of 0.1 Telegram Stars per message. The relevant Stars will be withdrawn from the bot's balance"),
+                ),
+                Param(
+                    name: "message_effect_id",
+                    ty: Option(RawTy("EffectId")),
+                    descr: Doc(md: "Unique identifier of the message effect to be added to the message; for private chats only"),
+                ),
+                Param(
+                    name: "suggested_post_parameters",
+                    ty: Option(RawTy("SuggestedPostParameters")),
+                    descr: Doc(md: "An object containing the parameters of the suggested post to send; for direct messages chats only. If the message is sent as a reply to another suggested post, then that suggested post is automatically declined."),
+                ),
+                Param(
+                    name: "reply_parameters",
+                    ty: Option(RawTy("ReplyParameters")),
+                    descr: Doc(md: "Description of the message to reply to"),
+                ),
+                Param(
+                    name: "reply_markup",
+                    ty: Option(RawTy("ReplyMarkup")),
+                    descr: Doc(
+                        md: "Additional interface options. A JSON-serialized object for an [inline keyboard], [custom reply keyboard], instructions to remove a reply keyboard or to force a reply from the user. Not supported for messages sent on behalf of a business account.",
+                        md_links: {
+                            "inline keyboard": "https://core.telegram.org/bots#inline-keyboards-and-on-the-fly-updating",
+                            "custom reply keyboard": "https://core.telegram.org/bots#keyboards",
+                        }
+                    ),
+                ),
+            ],
+        ),
+        Method(
+            names: ("sendRichMessageDraft", "SendRichMessageDraft", "send_rich_message_draft"),
+            return_ty: True,
+            doc: Doc(md: "Use this method to stream a partial rich message to a user while the message is being generated. On success, _True_ is returned."),
+            tg_doc: "https://core.telegram.org/bots/api#sendrichmessagedraft",
+            tg_category: "Available methods",
+            params: [
+                Param(
+                    name: "chat_id",
+                    ty: RawTy("ChatId"),
+                    descr: Doc(md: "Unique identifier for the target private chat"),
+                ),
+                Param(
+                    name: "message_thread_id",
+                    ty: Option(RawTy("ThreadId")),
+                    descr: Doc(md: "Unique identifier for the target message thread (topic) of the forum; for forum supergroups only"),
+                ),
+                Param(
+                    name: "draft_id",
+                    ty: i64,
+                    descr: Doc(md: "Unique identifier of the message draft; must be non-zero. Same-id changes are animated"),
+                ),
+                Param(
+                    name: "rich_message",
+                    ty: RawTy("InputRichMessage"),
+                    descr: Doc(md: "The partial message to be streamed"),
+                ),
+            ],
+        ),
+        Method(
             names: ("forwardMessage", "ForwardMessage", "forward_message"),
             return_ty: RawTy("Message"),
             doc: Doc(
@@ -4396,8 +4506,13 @@ Schema(
                 ),
                 Param(
                     name: "text",
-                    ty: String,
-                    descr: Doc(md: "New text of the message, 1-4096 characters after entities parsing")
+                    ty: Option(String),
+                    descr: Doc(md: "New text of the message, 1-4096 characters after entities parsing; required if `rich_message` isn't specified")
+                ),
+                Param(
+                    name: "rich_message",
+                    ty: Option(RawTy("InputRichMessage")),
+                    descr: Doc(md: "New rich content of the message; required if `text` isn't specified"),
                 ),
                 Param(
                     name: "business_connection_id",
@@ -4450,8 +4565,13 @@ Schema(
                 ),
                 Param(
                     name: "text",
-                    ty: String,
-                    descr: Doc(md: "New text of the message, 1-4096 characters after entities parsing")
+                    ty: Option(String),
+                    descr: Doc(md: "New text of the message, 1-4096 characters after entities parsing; required if `rich_message` isn't specified")
+                ),
+                Param(
+                    name: "rich_message",
+                    ty: Option(RawTy("InputRichMessage")),
+                    descr: Doc(md: "New rich content of the message; required if `text` isn't specified"),
                 ),
                 Param(
                     name: "business_connection_id",

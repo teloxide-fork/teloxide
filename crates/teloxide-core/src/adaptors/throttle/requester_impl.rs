@@ -42,6 +42,7 @@ where
     B::Err: AsResponseParameters,
 
     B::SendMessage: Clone + Send + Sync + 'static,
+    B::SendRichMessage: Clone + Send + Sync + 'static,
     B::ForwardMessage: Clone + Send + Sync + 'static,
     B::ForwardMessages: Clone + Send + Sync + 'static,
     B::CopyMessage: Clone + Send + Sync + 'static,
@@ -70,6 +71,7 @@ where
 
     requester_forward! {
         send_message,
+        send_rich_message,
         forward_message,
         forward_messages,
         copy_message,
@@ -216,6 +218,7 @@ where
         set_sticker_mask_position,
         get_available_gifts,
         send_message_draft,
+        send_rich_message_draft,
         send_gift,
         send_gift_chat,
         gift_premium_subscription,

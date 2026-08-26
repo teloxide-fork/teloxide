@@ -129,6 +129,8 @@ where
         copy_messages,
         send_message,
         send_message_draft,
+        send_rich_message,
+        send_rich_message_draft,
         send_photo,
         send_live_photo,
         send_audio,

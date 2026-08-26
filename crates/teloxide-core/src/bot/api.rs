@@ -8,9 +8,9 @@ use crate::{
         AcceptedGiftTypes, BotCommand, BusinessConnectionId, CallbackQueryId, ChatId,
         ChatJoinRequestQueryResult, ChatPermissions, CustomEmojiId, FileId, GiftId, InlineQueryId,
         InlineQueryResult, InputChecklist, InputFile, InputMedia, InputPaidMedia, InputPollOption,
-        InputProfilePhoto, InputSticker, InputStoryContent, KeyboardButton, LabeledPrice,
-        MessageId, OwnedGiftId, PreCheckoutQueryId, Recipient, Seconds, ShippingQueryId,
-        StickerFormat, StoryId, TelegramTransactionId, ThreadId, UserId,
+        InputProfilePhoto, InputRichMessage, InputSticker, InputStoryContent, KeyboardButton,
+        LabeledPrice, MessageId, OwnedGiftId, PreCheckoutQueryId, Recipient, Seconds,
+        ShippingQueryId, StickerFormat, StoryId, TelegramTransactionId, ThreadId, UserId,
     },
     Bot,
 };
@@ -67,6 +67,39 @@ impl Requester for Bot {
         Self::SendMessageDraft::new(
             self.clone(),
             payloads::SendMessageDraft::new(chat_id, draft_id),
+        )
+    }
+
+    type SendRichMessage = JsonRequest<payloads::SendRichMessage>;
+
+    fn send_rich_message<C>(
+        &self,
+        chat_id: C,
+        rich_message: InputRichMessage,
+    ) -> Self::SendRichMessage
+    where
+        C: Into<Recipient>,
+    {
+        Self::SendRichMessage::new(
+            self.clone(),
+            payloads::SendRichMessage::new(chat_id, rich_message),
+        )
+    }
+
+    type SendRichMessageDraft = JsonRequest<payloads::SendRichMessageDraft>;
+
+    fn send_rich_message_draft<C>(
+        &self,
+        chat_id: C,
+        draft_id: i64,
+        rich_message: InputRichMessage,
+    ) -> Self::SendRichMessageDraft
+    where
+        C: Into<ChatId>,
+    {
+        Self::SendRichMessageDraft::new(
+            self.clone(),
+            payloads::SendRichMessageDraft::new(chat_id, draft_id, rich_message),
         )
     }
 
@@ -1270,36 +1303,25 @@ impl Requester for Bot {
 
     type EditMessageText = JsonRequest<payloads::EditMessageText>;
 
-    fn edit_message_text<C, T>(
-        &self,
-        chat_id: C,
-        message_id: MessageId,
-        text: T,
-    ) -> Self::EditMessageText
+    fn edit_message_text<C>(&self, chat_id: C, message_id: MessageId) -> Self::EditMessageText
     where
         C: Into<Recipient>,
-        T: Into<String>,
     {
         Self::EditMessageText::new(
             self.clone(),
-            payloads::EditMessageText::new(chat_id, message_id, text),
+            payloads::EditMessageText::new(chat_id, message_id),
         )
     }
 
     type EditMessageTextInline = JsonRequest<payloads::EditMessageTextInline>;
 
-    fn edit_message_text_inline<I, T>(
-        &self,
-        inline_message_id: I,
-        text: T,
-    ) -> Self::EditMessageTextInline
+    fn edit_message_text_inline<I>(&self, inline_message_id: I) -> Self::EditMessageTextInline
     where
         I: Into<String>,
-        T: Into<String>,
     {
         Self::EditMessageTextInline::new(
             self.clone(),
-            payloads::EditMessageTextInline::new(inline_message_id, text),
+            payloads::EditMessageTextInline::new(inline_message_id),
         )
     }
 

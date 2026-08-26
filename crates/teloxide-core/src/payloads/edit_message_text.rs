@@ -3,8 +3,8 @@
 use serde::Serialize;
 
 use crate::types::{
-    BusinessConnectionId, InlineKeyboardMarkup, LinkPreviewOptions, Message, MessageEntity,
-    MessageId, ParseMode, Recipient,
+    BusinessConnectionId, InlineKeyboardMarkup, InputRichMessage, LinkPreviewOptions, Message,
+    MessageEntity, MessageId, ParseMode, Recipient,
 };
 
 impl_payload! {
@@ -21,10 +21,12 @@ impl_payload! {
             /// Identifier of the message to edit
             #[serde(flatten)]
             pub message_id: MessageId,
-            /// New text of the message, 1-4096 characters after entities parsing
-            pub text: String [into],
         }
         optional {
+            /// New text of the message, 1-4096 characters after entities parsing; required if `rich_message` isn't specified
+            pub text: String [into],
+            /// New rich content of the message; required if `text` isn't specified
+            pub rich_message: InputRichMessage,
             /// Unique identifier of the business connection on behalf of which the message to be edited was sent
             pub business_connection_id: BusinessConnectionId,
             /// Mode for parsing entities in the message text. See [formatting options] for more details.

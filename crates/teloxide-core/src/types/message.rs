@@ -15,11 +15,11 @@ use crate::types::{
     Invoice, LinkPreviewOptions, LivePhoto, Location, ManagedBotCreated, MaybeInaccessibleMessage,
     MessageAutoDeleteTimerChanged, MessageEntity, MessageEntityRef, MessageId, MessageOrigin,
     PaidMediaInfo, PaidMessagePriceChanged, PassportData, PhotoSize, Poll, PollOptionAdded,
-    PollOptionDeleted, ProximityAlertTriggered, RefundedPayment, Sticker, Story, SuccessfulPayment,
-    SuggestedPostApprovalFailed, SuggestedPostApproved, SuggestedPostDeclined, SuggestedPostInfo,
-    SuggestedPostPaid, SuggestedPostRefunded, TextQuote, ThreadId, True, UniqueGiftInfo, User,
-    UsersShared, Venue, Video, VideoChatEnded, VideoChatParticipantsInvited, VideoChatScheduled,
-    VideoChatStarted, VideoNote, Voice, WebAppData, WriteAccessAllowed,
+    PollOptionDeleted, ProximityAlertTriggered, RefundedPayment, RichMessage, Sticker, Story,
+    SuccessfulPayment, SuggestedPostApprovalFailed, SuggestedPostApproved, SuggestedPostDeclined,
+    SuggestedPostInfo, SuggestedPostPaid, SuggestedPostRefunded, TextQuote, ThreadId, True,
+    UniqueGiftInfo, User, UsersShared, Venue, Video, VideoChatEnded, VideoChatParticipantsInvited,
+    VideoChatScheduled, VideoChatStarted, VideoNote, Voice, WebAppData, WriteAccessAllowed,
 };
 
 /// This object represents a message.
@@ -490,6 +490,14 @@ pub enum MediaKind {
     Checklist(MediaChecklist),
     Sticker(MediaSticker),
     Story(MediaStory),
+    // Note:
+    // - `RichMessage` must be in front of `Text`
+    //
+    // This is needed so serde doesn't parse `RichMessage` as `Text` (in case Telegram ever
+    // sends a plaintext `text` fallback field alongside `rich_message` for backward
+    // compatibility with old clients, matching the existing `Venue`/`Location` and
+    // `Animation`/`Document` precedent above)
+    RichMessage(MediaRichMessage),
     Text(MediaText),
     LivePhoto(MediaLivePhoto),
     Video(MediaVideo),
@@ -720,6 +728,14 @@ pub struct MediaText {
     /// Options used for link preview generation for the message, if it is a
     /// text message and link preview options were changed
     pub link_preview_options: Option<LinkPreviewOptions>,
+}
+
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+pub struct MediaRichMessage {
+    /// Message is a rich formatted message.
+    pub rich_message: RichMessage,
 }
 
 #[serde_with::skip_serializing_none]
@@ -1088,18 +1104,18 @@ mod getters {
         self, message::MessageKind::*, Chat, ChatId, ChatMigration, EffectId, LinkPreviewOptions,
         MaybeInaccessibleMessage, MediaAnimation, MediaAudio, MediaChecklist, MediaContact,
         MediaDocument, MediaGame, MediaKind, MediaLivePhoto, MediaLocation, MediaPaid, MediaPhoto,
-        MediaSticker, MediaStory, MediaText, MediaVenue, MediaVideo, MediaVideoNote, MediaVoice,
-        Message, MessageChannelChatCreated, MessageChatOwnerChanged, MessageChatOwnerLeft,
-        MessageChatShared, MessageChecklistTasksAdded, MessageChecklistTasksDone, MessageCommon,
-        MessageConnectedWebsite, MessageDeleteChatPhoto, MessageDice,
-        MessageDirectMessagePriceChanged, MessageEntity, MessageGroupChatCreated, MessageId,
-        MessageInvoice, MessageLeftChatMember, MessageNewChatMembers, MessageNewChatPhoto,
-        MessageNewChatTitle, MessageOrigin, MessagePassportData, MessagePinned,
-        MessageProximityAlertTriggered, MessageSuccessfulPayment,
+        MediaRichMessage, MediaSticker, MediaStory, MediaText, MediaVenue, MediaVideo,
+        MediaVideoNote, MediaVoice, Message, MessageChannelChatCreated, MessageChatOwnerChanged,
+        MessageChatOwnerLeft, MessageChatShared, MessageChecklistTasksAdded,
+        MessageChecklistTasksDone, MessageCommon, MessageConnectedWebsite, MessageDeleteChatPhoto,
+        MessageDice, MessageDirectMessagePriceChanged, MessageEntity, MessageGroupChatCreated,
+        MessageId, MessageInvoice, MessageLeftChatMember, MessageNewChatMembers,
+        MessageNewChatPhoto, MessageNewChatTitle, MessageOrigin, MessagePassportData,
+        MessagePinned, MessageProximityAlertTriggered, MessageSuccessfulPayment,
         MessageSuggestedPostApprovalFailed, MessageSuggestedPostApproved,
         MessageSuggestedPostDeclined, MessageSuggestedPostPaid, MessageSuggestedPostRefunded,
         MessageSupergroupChatCreated, MessageUsersShared, MessageVideoChatParticipantsInvited,
-        PhotoSize, Story, TextQuote, User,
+        PhotoSize, RichMessage, Story, TextQuote, User,
     };
 
     use super::{
@@ -1334,6 +1350,17 @@ mod getters {
             }
         }
 
+        #[must_use]
+        pub fn rich_message(&self) -> Option<&RichMessage> {
+            match &self.kind {
+                Common(MessageCommon {
+                    media_kind: MediaKind::RichMessage(MediaRichMessage { rich_message }),
+                    ..
+                }) => Some(rich_message),
+                _ => None,
+            }
+        }
+
         /// Returns message entities that represent text formatting.
         ///
         /// **Note:** you probably want to use [`parse_caption_entities`]
@@ -1409,6 +1436,7 @@ mod getters {
                     | MediaKind::Sticker(_)
                     | MediaKind::Story(_)
                     | MediaKind::Text(_)
+                    | MediaKind::RichMessage(_)
                     | MediaKind::VideoNote(_)
                     | MediaKind::Voice(_)
                     | MediaKind::Migration(_) => false,
@@ -1443,6 +1471,7 @@ mod getters {
                     | MediaKind::Sticker(_)
                     | MediaKind::Story(_)
                     | MediaKind::Text(_)
+                    | MediaKind::RichMessage(_)
                     | MediaKind::VideoNote(_)
                     | MediaKind::Voice(_)
                     | MediaKind::Migration(_) => false,
@@ -3768,5 +3797,81 @@ mod tests {
         }"#;
         let message: Message = from_str(json).unwrap();
         assert!(message.show_caption_above_media())
+    }
+
+    // Regression test for the highest-risk item in the TBA 10.1 release
+    // (see design doc "Message integration" / oracle B1): a rich-message
+    // JSON payload has no `text`/`photo`/etc. field, so it must go through
+    // `MediaKind::RichMessage`, not a bare `Message` field — otherwise it
+    // would match no existing `MediaKind` variant and silently fall through
+    // to `MessageKind::Empty {}`, dropping `reply_to_message`,
+    // `reply_markup`, and every other `MessageCommon` field with no error.
+    #[test]
+    fn rich_message_does_not_drop_common_fields() {
+        let json = r#"{
+            "message_id": 10,
+            "chat": {"id": 1, "type": "private", "first_name": "A"},
+            "date": 1721162702,
+            "reply_to_message": {
+                "message_id": 9,
+                "chat": {"id": 1, "type": "private", "first_name": "A"},
+                "date": 1721162577,
+                "text": "original message"
+            },
+            "reply_markup": {
+                "inline_keyboard": [[{"text": "Click", "callback_data": "click"}]]
+            },
+            "rich_message": {
+                "blocks": [{"type": "paragraph", "text": "hello"}],
+                "is_rtl": false
+            }
+        }"#;
+
+        let message: Message = serde_json::from_str(json).unwrap();
+
+        let MessageKind::Common(common) = &message.kind else {
+            panic!("expected MessageKind::Common, got {:?}", message.kind);
+        };
+
+        assert!(
+            matches!(common.media_kind, MediaKind::RichMessage(_)),
+            "expected MediaKind::RichMessage, got {:?}",
+            common.media_kind
+        );
+        assert!(common.reply_markup.is_some(), "reply_markup was dropped");
+        assert!(message.reply_to_message().is_some(), "reply_to_message was dropped");
+        assert!(message.rich_message().is_some());
+    }
+
+    // Confirms the `RichMessage`-before-`Text` ordering in `MediaKind` (untagged
+    // enum resolution tries variants in declaration order): if a payload ever
+    // carries both `text` and `rich_message` (e.g. a plaintext fallback for old
+    // clients), it must resolve to `MediaKind::RichMessage`, not `MediaKind::Text`.
+    #[test]
+    fn rich_message_takes_priority_over_text_when_both_present() {
+        let json = r#"{
+            "message_id": 11,
+            "chat": {"id": 1, "type": "private", "first_name": "A"},
+            "date": 1721162702,
+            "text": "plaintext fallback",
+            "rich_message": {
+                "blocks": [{"type": "paragraph", "text": "hello"}],
+                "is_rtl": false
+            }
+        }"#;
+
+        let message: Message = serde_json::from_str(json).unwrap();
+
+        let MessageKind::Common(common) = &message.kind else {
+            panic!("expected MessageKind::Common, got {:?}", message.kind);
+        };
+
+        assert!(
+            matches!(common.media_kind, MediaKind::RichMessage(_)),
+            "expected MediaKind::RichMessage to take priority over MediaKind::Text, got {:?}",
+            common.media_kind
+        );
+        assert!(message.rich_message().is_some());
+        assert!(message.text().is_none());
     }
 }

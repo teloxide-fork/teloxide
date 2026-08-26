@@ -201,6 +201,8 @@ where
         copy_messages,
         send_message,
         send_message_draft,
+        send_rich_message,
+        send_rich_message_draft,
         send_photo,
         send_live_photo,
         send_audio,
@@ -410,6 +412,19 @@ trait ErasableRequester<'a> {
         chat_id: ChatId,
         draft_id: i64,
     ) -> ErasedRequest<'a, SendMessageDraft, Self::Err>;
+
+    fn send_rich_message(
+        &self,
+        chat_id: Recipient,
+        rich_message: InputRichMessage,
+    ) -> ErasedRequest<'a, SendRichMessage, Self::Err>;
+
+    fn send_rich_message_draft(
+        &self,
+        chat_id: ChatId,
+        draft_id: i64,
+        rich_message: InputRichMessage,
+    ) -> ErasedRequest<'a, SendRichMessageDraft, Self::Err>;
 
     fn forward_message(
         &self,
@@ -978,13 +993,11 @@ trait ErasableRequester<'a> {
         &self,
         chat_id: Recipient,
         message_id: MessageId,
-        text: String,
     ) -> ErasedRequest<'a, EditMessageText, Self::Err>;
 
     fn edit_message_text_inline(
         &self,
         inline_message_id: String,
-        text: String,
     ) -> ErasedRequest<'a, EditMessageTextInline, Self::Err>;
 
     fn edit_message_caption(
@@ -1441,6 +1454,23 @@ where
         draft_id: i64,
     ) -> ErasedRequest<'a, SendMessageDraft, Self::Err> {
         Requester::send_message_draft(self, chat_id, draft_id).erase()
+    }
+
+    fn send_rich_message(
+        &self,
+        chat_id: Recipient,
+        rich_message: InputRichMessage,
+    ) -> ErasedRequest<'a, SendRichMessage, Self::Err> {
+        Requester::send_rich_message(self, chat_id, rich_message).erase()
+    }
+
+    fn send_rich_message_draft(
+        &self,
+        chat_id: ChatId,
+        draft_id: i64,
+        rich_message: InputRichMessage,
+    ) -> ErasedRequest<'a, SendRichMessageDraft, Self::Err> {
+        Requester::send_rich_message_draft(self, chat_id, draft_id, rich_message).erase()
     }
 
     fn forward_message(
@@ -2234,17 +2264,15 @@ where
         &self,
         chat_id: Recipient,
         message_id: MessageId,
-        text: String,
     ) -> ErasedRequest<'a, EditMessageText, Self::Err> {
-        Requester::edit_message_text(self, chat_id, message_id, text).erase()
+        Requester::edit_message_text(self, chat_id, message_id).erase()
     }
 
     fn edit_message_text_inline(
         &self,
         inline_message_id: String,
-        text: String,
     ) -> ErasedRequest<'a, EditMessageTextInline, Self::Err> {
-        Requester::edit_message_text_inline(self, inline_message_id, text).erase()
+        Requester::edit_message_text_inline(self, inline_message_id).erase()
     }
 
     fn edit_message_caption(

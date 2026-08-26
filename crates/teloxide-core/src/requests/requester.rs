@@ -197,6 +197,29 @@ pub trait Requester {
     where
         C: Into<ChatId>;
 
+    type SendRichMessage: Request<Payload = SendRichMessage, Err = Self::Err>;
+
+    /// For Telegram documentation see [`SendRichMessage`].
+    fn send_rich_message<C>(
+        &self,
+        chat_id: C,
+        rich_message: InputRichMessage,
+    ) -> Self::SendRichMessage
+    where
+        C: Into<Recipient>;
+
+    type SendRichMessageDraft: Request<Payload = SendRichMessageDraft, Err = Self::Err>;
+
+    /// For Telegram documentation see [`SendRichMessageDraft`].
+    fn send_rich_message_draft<C>(
+        &self,
+        chat_id: C,
+        draft_id: i64,
+        rich_message: InputRichMessage,
+    ) -> Self::SendRichMessageDraft
+    where
+        C: Into<ChatId>;
+
     type ForwardMessage: Request<Payload = ForwardMessage, Err = Self::Err>;
 
     /// For Telegram documentation see [`ForwardMessage`].
@@ -1121,27 +1144,16 @@ pub trait Requester {
     type EditMessageText: Request<Payload = EditMessageText, Err = Self::Err>;
 
     /// For Telegram documentation see [`EditMessageText`].
-    fn edit_message_text<C, T>(
-        &self,
-        chat_id: C,
-        message_id: MessageId,
-        text: T,
-    ) -> Self::EditMessageText
+    fn edit_message_text<C>(&self, chat_id: C, message_id: MessageId) -> Self::EditMessageText
     where
-        C: Into<Recipient>,
-        T: Into<String>;
+        C: Into<Recipient>;
 
     type EditMessageTextInline: Request<Payload = EditMessageTextInline, Err = Self::Err>;
 
     /// For Telegram documentation see [`EditMessageTextInline`].
-    fn edit_message_text_inline<I, T>(
-        &self,
-        inline_message_id: I,
-        text: T,
-    ) -> Self::EditMessageTextInline
+    fn edit_message_text_inline<I>(&self, inline_message_id: I) -> Self::EditMessageTextInline
     where
-        I: Into<String>,
-        T: Into<String>;
+        I: Into<String>;
 
     type EditMessageCaption: Request<Payload = EditMessageCaption, Err = Self::Err>;
 
@@ -1846,6 +1858,8 @@ macro_rules! forward_all {
             copy_messages,
             send_message,
             send_message_draft,
+            send_rich_message,
+            send_rich_message_draft,
             send_photo,
             send_live_photo,
             send_audio,
