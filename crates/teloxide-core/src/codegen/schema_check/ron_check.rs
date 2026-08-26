@@ -48,26 +48,9 @@ enum ApiCheckError {
 
 #[derive(Debug, Clone, PartialEq)]
 enum Exception {
-    MethodField {
-        method: String,
-        param: String,
-    },
-    FieldType {
-        ron_raw_type: String,
-        actual_type: String,
-    },
-    SiblingParam {
-        param: String,
-    },
-    /// A param that `schema.ron` declares `Option`-al, but the checking
-    /// schema (`custom_v2.json`) still lists as required, because
-    /// `custom_v2.json` hasn't been regenerated for the API version that
-    /// introduced the change yet. Remove once `custom_v2.json` is refreshed
-    /// to match.
-    OptionalOverride {
-        method: String,
-        param: String,
-    },
+    MethodField { method: String, param: String },
+    FieldType { ron_raw_type: String, actual_type: String },
+    SiblingParam { param: String },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -94,10 +77,6 @@ impl Exceptions {
 
     fn is_sibling_param_exception(&self, param: String) -> bool {
         self.exceptions.contains(&Exception::SiblingParam { param })
-    }
-
-    fn is_optional_override_exception(&self, method: String, param: String) -> bool {
-        self.exceptions.contains(&Exception::OptionalOverride { method, param })
     }
 }
 
@@ -331,9 +310,7 @@ fn check_param(
     let mut ron_param = ron_param.clone();
 
     if let schema::Type::Option(ron_param_type) = &ron_param.ty {
-        if param.required
-            && !exceptions.is_optional_override_exception(method_name.clone(), param.name.clone())
-        {
+        if param.required {
             errors.push(ApiCheckError::ParamIsNotOptional {
                 method: method_name.clone(),
                 param: param.name.clone(),
@@ -509,22 +486,6 @@ mod tests {
             Exception::SiblingParam { param: "user_id".to_owned() },
             Exception::SiblingParam { param: "chat_id".to_owned() },
             Exception::SiblingParam { param: "message_id".to_owned() },
-        ]);
-
-        // TBA 10.1 made `text` optional on `editMessageText`/`editMessageTextInline`
-        // (now required only if `rich_message` isn't specified), but
-        // `custom_v2.json` hasn't been regenerated for 10.1 yet (see Phase 4 of the
-        // TBA 10.1 plan), so it still reports `text` as required. Remove this
-        // exception once `custom_v2.json` is refreshed.
-        exceptions.extend(vec![
-            Exception::OptionalOverride {
-                method: "editMessageText".to_owned(),
-                param: "text".to_owned(),
-            },
-            Exception::OptionalOverride {
-                method: "editMessageTextInline".to_owned(),
-                param: "text".to_owned(),
-            },
         ]);
 
         // Some params are usually siblings, and if they are not, its an error.

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added support for Telegram Bot API 10.1 [**BC**]
 - Added support for Telegram Bot API 10.0
 - Added support for Telegram Bot API 9.6
 - Added support for Telegram Bot API 9.5

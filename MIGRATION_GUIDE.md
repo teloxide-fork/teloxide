@@ -5,6 +5,18 @@ Note that the list of required changes is not fully exhaustive and it may lack s
 
 ### teloxide-core
 
+TBA 10.1 made the `text` parameter of `edit_message_text`/`edit_message_text_inline` optional, since a message can now instead be edited with a `rich_message` (`InputRichMessage`). Because of this, `text` is no longer a positional constructor argument and must be set via the `.text(...)` builder method:
+
+```diff
+-bot.edit_message_text(chat_id, message_id, "new text").await?;
++bot.edit_message_text(chat_id, message_id).text("new text").await?;
+
+-bot.edit_message_text_inline(inline_message_id, "new text").await?;
++bot.edit_message_text_inline(inline_message_id).text("new text").await?;
+```
+
+Note that `teloxide::sugar::bot::BotMessagesExt::edit_text` was already updated internally and needs no changes from library users of that sugar API; only direct `Requester::edit_message_text`/`edit_message_text_inline` callers are affected.
+
 TBA 9.3 replaced the `last_resale_star_count` field of `UniqueGiftInfo` with `last_resale_currency` and `last_resale_amount`:
 
 ```diff

@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Support for TBA 10.1
+  - Join request queries: `User::supports_join_request_queries`, `ChatFullInfo::guard_bot`, `ChatJoinRequest::query_id`, `answer_chat_join_request_query` and `send_chat_join_request_web_app` methods
+  - Polls: `Link` and `InputMediaLink` structs, and `link` field to `PollMedia` struct
+  - Rich messages: `RichText`/`RichBlock` type trees, `RichMessage` struct, `InputRichMessage` struct, `send_rich_message` and `send_rich_message_draft` methods, and `Message::rich_message()` accessor
+  - `text` parameter of `edit_message_text`/`edit_message_text_inline` is now optional (an alternative to the new `rich_message` parameter) [**BC**]
 - Support for TBA 10.0
   - Guest mode: guest message updates and `answer_guest_query`
   - Message-reaction management and the `can_react_to_messages` permission
