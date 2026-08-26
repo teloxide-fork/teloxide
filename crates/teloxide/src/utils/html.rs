@@ -245,6 +245,7 @@ mod tests {
             allows_users_to_create_topics: false,
             can_manage_bots: false,
             supports_guest_queries: false,
+            supports_join_request_queries: None,
         };
         assert_eq!(user_mention_or_link(&user_with_username), "@abcd");
         let user_without_username = User {
@@ -260,6 +261,7 @@ mod tests {
             allows_users_to_create_topics: false,
             can_manage_bots: false,
             supports_guest_queries: false,
+            supports_join_request_queries: None,
         };
         assert_eq!(
             user_mention_or_link(&user_without_username),
