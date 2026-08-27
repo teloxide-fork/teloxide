@@ -87,6 +87,7 @@ impl EventKind for Kind {
             ChatBoost,
             RemovedChatBoost,
             ManagedBot,
+            StoppedMessageGeneration,
         ]
         .into_iter()
         .map(Kind)
@@ -158,6 +159,17 @@ mod tests {
         assert_eq!(allowed_updates, [AllowedUpdate::GuestMessage]);
     }
 
+    #[test]
+    fn stopped_message_generation() {
+        let handler = dptree::entry().branch(
+            <CoreUpdate as UpdateFilterExt<()>>::filter_stopped_message_generation()
+                .endpoint(|| async {}),
+        );
+        let allowed_updates = handler.description().allowed_updates();
+
+        assert_eq!(allowed_updates, [AllowedUpdate::StoppedMessageGeneration]);
+    }
+
     // Test that all possible updates are specified in `Kind::full_set()`
     #[test]
     #[cfg(feature = "macros")]
@@ -185,6 +197,7 @@ mod tests {
             ChatBoost,
             RemovedChatBoost,
             ManagedBot,
+            StoppedMessageGeneration,
         ];
 
         for update in allowed_updates_reference {
@@ -211,6 +224,7 @@ mod tests {
                 | ChatBoost
                 | RemovedChatBoost
                 | ManagedBot
+                | StoppedMessageGeneration
                 | BusinessMessage
                 | BusinessConnection
                 | EditedBusinessMessage

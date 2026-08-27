@@ -3,8 +3,8 @@
 use serde::Serialize;
 
 use crate::types::{
-    BusinessConnectionId, EffectId, InputFile, Message, MessageEntity, ParseMode, Recipient,
-    ReplyMarkup, ReplyParameters, SuggestedPostParameters, ThreadId, TopicId,
+    BusinessConnectionId, EffectId, EphemeralMessageParameters, InputFile, Message, MessageEntity,
+    ParseMode, Recipient, ReplyMarkup, ReplyParameters, SuggestedPostParameters, ThreadId, TopicId,
 };
 
 impl_payload! {
@@ -27,10 +27,8 @@ impl_payload! {
         optional {
             /// Unique identifier of the business connection on behalf of which the message will be sent
             pub business_connection_id: BusinessConnectionId,
-            /// Unique identifier of the user to whom the message will be sent as an ephemeral message
-            pub receiver_user_id: i64,
-            /// Unique identifier of the callback query to which the message is a response
-            pub callback_query_id: String [into],
+            /// A JSON-serialized object containing the parameters of the ephemeral message to send
+            pub ephemeral_message_parameters: EphemeralMessageParameters,
             /// Unique identifier for the target message thread (topic) of the forum; for forum supergroups only
             pub message_thread_id: ThreadId,
             /// Identifier of the direct messages topic to which the message will be sent; required if the message is sent to a direct messages chat

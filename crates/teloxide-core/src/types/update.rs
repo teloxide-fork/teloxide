@@ -5,8 +5,9 @@ use serde_json::Value;
 use crate::types::{
     BotSubscriptionUpdated, BusinessConnection, BusinessMessagesDeleted, CallbackQuery, Chat,
     ChatBoostRemoved, ChatBoostUpdated, ChatJoinRequest, ChatMemberUpdated, ChosenInlineResult,
-    InlineQuery, ManagedBotUpdated, Message, MessageReactionCountUpdated, MessageReactionUpdated,
-    PaidMediaPurchased, Poll, PollAnswer, PreCheckoutQuery, ShippingQuery, User,
+    InlineQuery, ManagedBotUpdated, Message, MessageGenerationStopped, MessageReactionCountUpdated,
+    MessageReactionUpdated, PaidMediaPurchased, Poll, PollAnswer, PreCheckoutQuery, ShippingQuery,
+    User,
 };
 
 /// This [object] represents an incoming update.
@@ -164,6 +165,9 @@ pub enum UpdateKind {
     /// A bot subscription state was updated.
     Subscription(BotSubscriptionUpdated),
 
+    /// A message generation was stopped.
+    StoppedMessageGeneration(MessageGenerationStopped),
+
     /// An error that happened during deserialization.
     ///
     /// This allows `teloxide` to continue working even if telegram adds a new
@@ -211,9 +215,11 @@ impl Update {
             ManagedBot(u) => &u.user,
             Subscription(u) => &u.user,
 
-            MessageReactionCount(_) | DeletedBusinessMessages(_) | Poll(_) | Error(_) => {
-                return None
-            }
+            MessageReactionCount(_)
+            | DeletedBusinessMessages(_)
+            | Poll(_)
+            | StoppedMessageGeneration(_)
+            | Error(_) => return None,
         };
 
         Some(from)
@@ -309,6 +315,7 @@ impl Update {
             | UpdateKind::MessageReactionCount(_)
             | UpdateKind::BusinessConnection(_)
             | UpdateKind::DeletedBusinessMessages(_)
+            | UpdateKind::StoppedMessageGeneration(_)
             | UpdateKind::Error(_) => i5(empty()),
         }
     }
@@ -335,6 +342,7 @@ impl Update {
             ChatBoost(b) => &b.chat,
             RemovedChatBoost(b) => &b.chat,
             DeletedBusinessMessages(m) => &m.chat,
+            StoppedMessageGeneration(m) => &m.chat,
 
             InlineQuery(_)
             | BusinessConnection(_)
@@ -482,6 +490,10 @@ impl<'de> Deserialize<'de> for UpdateKind {
                             .next_value::<BotSubscriptionUpdated>()
                             .ok()
                             .map(UpdateKind::Subscription),
+                        "stopped_message_generation" => map
+                            .next_value::<MessageGenerationStopped>()
+                            .ok()
+                            .map(UpdateKind::StoppedMessageGeneration),
                         _ => Some(empty_error()),
                     })
                     .unwrap_or_else(empty_error);
@@ -561,6 +573,9 @@ impl Serialize for UpdateKind {
             }
             UpdateKind::ManagedBot(v) => s.serialize_newtype_variant(name, 23, "managed_bot", v),
             UpdateKind::Subscription(v) => s.serialize_newtype_variant(name, 25, "subscription", v),
+            UpdateKind::StoppedMessageGeneration(v) => {
+                s.serialize_newtype_variant(name, 26, "stopped_message_generation", v)
+            }
             UpdateKind::Error(v) => v.serialize(s),
         }
     }
@@ -591,6 +606,39 @@ mod test {
         )
         .unwrap();
         assert!(matches!(update.kind, UpdateKind::Subscription(_)));
+    }
+
+    #[test]
+    fn deserializes_stopped_message_generation_update() {
+        let update: Update = serde_json::from_str(
+            r#"{"update_id":1,"stopped_message_generation":{"chat":{"id":1,"type":"private","first_name":"a"},"draft_id":7}}"#,
+        )
+        .unwrap();
+
+        let UpdateKind::StoppedMessageGeneration(stopped) = update.kind else {
+            panic!("expected StoppedMessageGeneration");
+        };
+        assert_eq!(stopped.draft_id, 7);
+        assert_eq!(serde_json::to_value(stopped).unwrap()["draft_id"], 7);
+    }
+
+    #[test]
+    fn ephemeral_message_parameters_builder_and_disabled_button() {
+        use crate::types::{DisabledButton, EphemeralMessageParameters};
+
+        let params = EphemeralMessageParameters::new(UserId(1))
+            .callback_query_id("q")
+            .replace_callback_query_message(true);
+        assert_eq!(params.receiver_user_id, UserId(1));
+        assert_eq!(
+            serde_json::to_value(params).unwrap(),
+            serde_json::json!({
+                "receiver_user_id": 1,
+                "callback_query_id": "q",
+                "replace_callback_query_message": true,
+            })
+        );
+        assert_eq!(serde_json::to_value(DisabledButton {}).unwrap(), serde_json::json!({}));
     }
 
     // TODO: more tests for deserialization

@@ -17,7 +17,7 @@ impl_payload! {
             /// Unique identifier of the ephemeral message to edit
             #[serde(with = "crate::types::msg_id_as_int")]
             pub ephemeral_message_id: MessageId,
-            /// A JSON-serialized object for the new media content of the message. A new file can't be uploaded; use a previously uploaded file via its file_id or specify a URL.
+            /// A JSON-serialized object for the new media content of the message.
             pub media: InputMedia,
         }
         optional {

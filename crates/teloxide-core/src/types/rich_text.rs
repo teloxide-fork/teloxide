@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::types::{CustomEmojiId, User};
+use crate::types::{
+    CopyTextButton, CustomEmojiId, DisabledButton, LoginUrl, SwitchInlineQueryChosenChat, User,
+    WebAppInfo,
+};
 
 /// Rich formatted text.
 ///
@@ -43,10 +46,64 @@ pub enum RichTextKind {
     Hashtag(RichTextHashtag),
     Cashtag(RichTextCashtag),
     BotCommand(RichTextBotCommand),
+    Button(RichTextButton),
     Anchor(RichTextAnchor),
     AnchorLink(RichTextAnchorLink),
     Reference(RichTextReference),
     ReferenceLink(RichTextReferenceLink),
+}
+
+/// A button in a rich formatted message.
+///
+/// Exactly one action field must be set.
+///
+/// [The official docs](https://core.telegram.org/bots/api#richmessagebutton).
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+pub struct RichMessageButton {
+    /// Text of the button.
+    pub text: RichText,
+
+    /// Style of the button.
+    pub style: Option<String>,
+
+    /// HTTP or `tg://` URL to open when the button is pressed.
+    pub url: Option<String>,
+
+    /// Data to send in a callback query when the button is pressed.
+    pub callback_data: Option<String>,
+
+    /// Web app to launch when the button is pressed.
+    pub web_app: Option<WebAppInfo>,
+
+    /// URL used to automatically authorize the user.
+    pub login_url: Option<LoginUrl>,
+
+    /// Inline query to insert after choosing a chat.
+    pub switch_inline_query: Option<String>,
+
+    /// Inline query to insert in the current chat.
+    pub switch_inline_query_current_chat: Option<String>,
+
+    /// Chat selection and inline query to use after choosing a chat.
+    pub switch_inline_query_chosen_chat: Option<SwitchInlineQueryChosenChat>,
+
+    /// Text to copy to the clipboard.
+    pub copy_text: Option<CopyTextButton>,
+
+    /// Marks the button as disabled.
+    pub disabled: Option<DisabledButton>,
+}
+
+/// A button embedded in rich text.
+///
+/// [The official docs](https://core.telegram.org/bots/api#richtextbutton).
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+pub struct RichTextButton {
+    /// The button.
+    pub button: Box<RichMessageButton>,
 }
 
 impl From<String> for RichText {
@@ -620,5 +677,26 @@ mod tests {
         for (kind, wire_type) in kinds {
             assert_eq!(serde_json::to_value(kind).unwrap()["type"], wire_type);
         }
+    }
+
+    #[test]
+    fn button_serializes_with_its_wire_type() {
+        let button = RichTextButton {
+            button: Box::new(RichMessageButton {
+                text: RichText::Plain("button".to_owned()),
+                style: None,
+                url: Some("https://example.com".to_owned()),
+                callback_data: None,
+                web_app: None,
+                login_url: None,
+                switch_inline_query: None,
+                switch_inline_query_current_chat: None,
+                switch_inline_query_chosen_chat: None,
+                copy_text: None,
+                disabled: None,
+            }),
+        };
+
+        assert_eq!(serde_json::to_value(RichTextKind::Button(button)).unwrap()["type"], "button");
     }
 }

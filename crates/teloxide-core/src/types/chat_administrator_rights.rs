@@ -67,6 +67,9 @@ pub struct ChatAdministratorRights {
 
     /// `true`, if the administrator can manage member tags.
     pub can_manage_tags: Option<bool>,
+
+    /// `true`, if the administrator can send welcome messages.
+    pub can_send_welcome_messages: Option<bool>,
 }
 
 #[cfg(test)]
@@ -78,5 +81,13 @@ mod tests {
         let json = r#"{"is_anonymous":false,"can_manage_chat":true,"can_delete_messages":false,"can_manage_video_chats":false,"can_restrict_members":false,"can_promote_members":false,"can_change_info":false,"can_invite_users":false,"can_manage_direct_messages":false,"can_manage_tags":true}"#;
         let rights: ChatAdministratorRights = serde_json::from_str(json).unwrap();
         assert_eq!(rights.can_manage_tags, Some(true));
+    }
+
+    #[test]
+    fn can_send_welcome_messages_roundtrip() {
+        let json = r#"{"is_anonymous":false,"can_manage_chat":true,"can_delete_messages":false,"can_manage_video_chats":false,"can_restrict_members":false,"can_promote_members":false,"can_change_info":false,"can_invite_users":false,"can_manage_direct_messages":false,"can_send_welcome_messages":true}"#;
+        let rights: ChatAdministratorRights = serde_json::from_str(json).unwrap();
+        assert_eq!(rights.can_send_welcome_messages, Some(true));
+        assert_eq!(serde_json::to_value(rights).unwrap()["can_send_welcome_messages"], true);
     }
 }

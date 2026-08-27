@@ -3,12 +3,14 @@
 use serde::Serialize;
 
 use crate::types::{
-    InlineKeyboardMarkup, LinkPreviewOptions, MessageEntity, MessageId, ParseMode, Recipient, True,
+    InlineKeyboardMarkup, InputRichMessage, LinkPreviewOptions, MessageEntity, MessageId,
+    ParseMode, Recipient, True,
 };
 
 impl_payload! {
+    @[multipart = rich_message]
     /// Use this method to edit text of an ephemeral message. Returns True on success.
-    #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize)]
+    #[derive(Debug, Clone, Serialize)]
     pub EditEphemeralMessageText (EditEphemeralMessageTextSetters) => True {
         required {
             /// Unique identifier for the target chat or username of the target channel (in the format `@channelusername`).
@@ -18,16 +20,18 @@ impl_payload! {
             /// Unique identifier of the ephemeral message to edit
             #[serde(with = "crate::types::msg_id_as_int")]
             pub ephemeral_message_id: MessageId,
-            /// New text of the message, 1-4096 characters after entities parsing
-            pub text: String [into],
         }
         optional {
+            /// New text of the message, 1-4096 characters after entities parsing; required if `rich_message` isn't specified
+            pub text: String [into],
             /// Mode for parsing entities in the message text. See [formatting options] for more details.
             ///
             /// [formatting options]: https://core.telegram.org/bots/api#formatting-options
             pub parse_mode: ParseMode,
             /// List of special entities that appear in message text, which can be specified instead of _parse\_mode_
             pub entities: Vec<MessageEntity> [collect],
+            /// New rich content of the message; required if `text` isn't specified
+            pub rich_message: InputRichMessage,
             /// Link preview generation options for the message
             pub link_preview_options: LinkPreviewOptions,
             /// A JSON-serialized object for an [inline keyboard].

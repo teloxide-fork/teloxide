@@ -8,18 +8,19 @@ use url::Url;
 use crate::types::{
     Animation, Audio, BareChatId, BusinessConnectionId, Chat, ChatBackground, ChatBoostAdded,
     ChatId, ChatOwnerChanged, ChatOwnerLeft, ChatShared, Checklist, ChecklistTaskId,
-    ChecklistTasksAdded, ChecklistTasksDone, Contact, Dice, DirectMessagePriceChanged,
-    DirectMessagesTopic, Document, ExternalReplyInfo, ForumTopicClosed, ForumTopicCreated,
-    ForumTopicEdited, ForumTopicReopened, Game, GeneralForumTopicHidden, GeneralForumTopicUnhidden,
-    GiftInfo, Giveaway, GiveawayCompleted, GiveawayCreated, GiveawayWinners, InlineKeyboardMarkup,
-    Invoice, LinkPreviewOptions, LivePhoto, Location, ManagedBotCreated, MaybeInaccessibleMessage,
-    MessageAutoDeleteTimerChanged, MessageEntity, MessageEntityRef, MessageId, MessageOrigin,
-    PaidMediaInfo, PaidMessagePriceChanged, PassportData, PhotoSize, Poll, PollOptionAdded,
-    PollOptionDeleted, ProximityAlertTriggered, RefundedPayment, RichMessage, Sticker, Story,
-    SuccessfulPayment, SuggestedPostApprovalFailed, SuggestedPostApproved, SuggestedPostDeclined,
-    SuggestedPostInfo, SuggestedPostPaid, SuggestedPostRefunded, TextQuote, ThreadId, True,
-    UniqueGiftInfo, User, UsersShared, Venue, Video, VideoChatEnded, VideoChatParticipantsInvited,
-    VideoChatScheduled, VideoChatStarted, VideoNote, Voice, WebAppData, WriteAccessAllowed,
+    ChecklistTasksAdded, ChecklistTasksDone, CommunityChatJoined, Contact, Dice,
+    DirectMessagePriceChanged, DirectMessagesTopic, Document, ExternalReplyInfo, ForumTopicClosed,
+    ForumTopicCreated, ForumTopicEdited, ForumTopicReopened, Game, GeneralForumTopicHidden,
+    GeneralForumTopicUnhidden, GiftInfo, Giveaway, GiveawayCompleted, GiveawayCreated,
+    GiveawayWinners, InlineKeyboardMarkup, Invoice, LinkPreviewOptions, LivePhoto, Location,
+    ManagedBotCreated, MaybeInaccessibleMessage, MessageAutoDeleteTimerChanged, MessageEntity,
+    MessageEntityRef, MessageId, MessageOrigin, PaidMediaInfo, PaidMessagePriceChanged,
+    PassportData, PhotoSize, Poll, PollOptionAdded, PollOptionDeleted, ProximityAlertTriggered,
+    RefundedPayment, RichMessage, Sticker, Story, SuccessfulPayment, SuggestedPostApprovalFailed,
+    SuggestedPostApproved, SuggestedPostDeclined, SuggestedPostInfo, SuggestedPostPaid,
+    SuggestedPostRefunded, TextQuote, ThreadId, True, UniqueGiftInfo, User, UsersShared, Venue,
+    Video, VideoChatEnded, VideoChatParticipantsInvited, VideoChatScheduled, VideoChatStarted,
+    VideoNote, Voice, WebAppData, WriteAccessAllowed,
 };
 
 /// This object represents a message.
@@ -158,6 +159,7 @@ pub enum MessageKind {
     ManagedBotCreated(MessageManagedBotCreated),
     CommunityChatAdded(MessageCommunityChatAdded),
     CommunityChatRemoved(MessageCommunityChatRemoved),
+    CommunityChatJoined(MessageCommunityChatJoined),
     PollOptionAdded(MessagePollOptionAdded),
     PollOptionDeleted(MessagePollOptionDeleted),
     UniqueGiftInfo(MessageUniqueGiftInfo),
@@ -1061,6 +1063,14 @@ pub struct MessageCommunityChatRemoved {
 #[serde_with::skip_serializing_none]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(schemars::JsonSchema))]
+pub struct MessageCommunityChatJoined {
+    /// Service message: the chat joined a community.
+    pub community_chat_joined: CommunityChatJoined,
+}
+
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 pub struct MessagePollOptionAdded {
     /// Service message: a poll option was added
     pub poll_option_added: PollOptionAdded,
@@ -1145,11 +1155,12 @@ mod getters {
     };
 
     use super::{
-        MediaGroupId, MessageChatBackground, MessageChatBoostAdded, MessageForumTopicClosed,
-        MessageForumTopicCreated, MessageForumTopicEdited, MessageForumTopicReopened,
-        MessageGeneralForumTopicHidden, MessageGeneralForumTopicUnhidden, MessageGiftInfo,
-        MessageGiftUpgradeSent, MessageGiveaway, MessageGiveawayCompleted, MessageGiveawayCreated,
-        MessageGiveawayWinners, MessageManagedBotCreated, MessageMessageAutoDeleteTimerChanged,
+        MediaGroupId, MessageChatBackground, MessageChatBoostAdded, MessageCommunityChatJoined,
+        MessageForumTopicClosed, MessageForumTopicCreated, MessageForumTopicEdited,
+        MessageForumTopicReopened, MessageGeneralForumTopicHidden,
+        MessageGeneralForumTopicUnhidden, MessageGiftInfo, MessageGiftUpgradeSent, MessageGiveaway,
+        MessageGiveawayCompleted, MessageGiveawayCreated, MessageGiveawayWinners,
+        MessageManagedBotCreated, MessageMessageAutoDeleteTimerChanged,
         MessagePaidMessagePriceChanged, MessagePollOptionAdded, MessagePollOptionDeleted,
         MessageUniqueGiftInfo, MessageVideoChatEnded, MessageVideoChatScheduled,
         MessageVideoChatStarted, MessageWebAppData, MessageWriteAccessAllowed,
@@ -2206,6 +2217,16 @@ mod getters {
         }
 
         #[must_use]
+        pub fn community_chat_joined(&self) -> Option<&types::CommunityChatJoined> {
+            match &self.kind {
+                CommunityChatJoined(MessageCommunityChatJoined { community_chat_joined }) => {
+                    Some(community_chat_joined)
+                }
+                _ => None,
+            }
+        }
+
+        #[must_use]
         pub fn poll_option_added(&self) -> Option<&types::PollOptionAdded> {
             match &self.kind {
                 PollOptionAdded(MessagePollOptionAdded { poll_option_added }) => {
@@ -2590,6 +2611,22 @@ mod tests {
         .unwrap();
         assert!(matches!(removed.kind, MessageKind::CommunityChatRemoved(_)));
         assert_eq!(removed.ephemeral_message_id, None);
+    }
+
+    #[test]
+    fn deserializes_joined_community() {
+        let message: Message = from_str(
+            r#"{
+                "message_id": 1, "date": 0,
+                "chat": {"id": 1, "first_name": "A", "type": "private"},
+                "community_chat_joined": {"community": {"id": 4, "name": "Rust"}}
+            }"#,
+        )
+        .unwrap();
+
+        assert!(matches!(message.kind, MessageKind::CommunityChatJoined(_)));
+        assert_eq!(message.community_chat_joined().unwrap().community.name, "Rust");
+        assert!(serde_json::to_value(message).unwrap().get("community_chat_joined").is_some());
     }
 
     use crate::types::*;

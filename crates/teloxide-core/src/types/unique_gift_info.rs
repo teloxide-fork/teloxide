@@ -1,4 +1,4 @@
-use crate::types::{OwnedGiftId, UniqueGift};
+use crate::types::{MessageEntity, OwnedGiftId, UniqueGift};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -38,6 +38,15 @@ pub struct UniqueGiftInfo {
     #[serde(default, with = "crate::types::serde_opt_date_from_unix_timestamp")]
     #[cfg_attr(test, schemars(with = "Option<i64>"))]
     pub next_transfer_date: Option<DateTime<Utc>>,
+
+    /// Text of the message that was used to send the gift.
+    pub text: Option<String>,
+
+    /// Special entities that appear in the gift text.
+    pub entities: Option<Vec<MessageEntity>>,
+
+    /// `true`, if the gift is private.
+    pub is_private: Option<bool>,
 }
 
 /// Origin of the gift. Currently, either `upgrade` for gifts upgraded from
@@ -118,5 +127,24 @@ mod tests {
         assert_eq!(unique_gift_info.origin, UniqueGiftOrigin::Upgrade);
         assert_eq!(unique_gift_info.gift.name, "name");
         assert_eq!(unique_gift_info.gift.backdrop.rarity_per_mille, 123);
+    }
+
+    #[test]
+    fn deserializes_text_entities_and_privacy() {
+        let data = r#"{
+            "gift": {
+                "gift_id":"gift","base_name":"name","name":"name","number":1,
+                "model":{"name":"model","sticker":{"file_id":"id","file_unique_id":"unique","width":1,"height":1,"type":"regular","is_animated":false,"is_video":false,"needs_repainting":false},"rarity_per_mille":1},
+                "symbol":{"name":"symbol","sticker":{"file_id":"id","file_unique_id":"unique","width":1,"height":1,"type":"regular","is_animated":false,"is_video":false,"needs_repainting":false},"rarity_per_mille":1},
+                "backdrop":{"name":"backdrop","colors":{"center_color":0,"edge_color":0,"symbol_color":0,"text_color":0},"rarity_per_mille":1}
+            },
+            "origin":"upgrade","text":"A gift","entities":[],"is_private":true
+        }"#;
+        let info: UniqueGiftInfo = serde_json::from_str(data).unwrap();
+
+        assert_eq!(info.text.as_deref(), Some("A gift"));
+        assert_eq!(info.entities, Some(vec![]));
+        assert_eq!(info.is_private, Some(true));
+        assert_eq!(serde_json::to_value(info).unwrap()["is_private"], true);
     }
 }

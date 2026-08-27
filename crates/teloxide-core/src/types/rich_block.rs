@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::types::{Animation, Audio, Location, PhotoSize, RichText, Video, Voice};
+use crate::types::{
+    Animation, Audio, Document, Location, PhotoSize, RichMessageButton, RichText, Video, Voice,
+};
 
 /// A block in a rich formatted message.
 ///
@@ -23,6 +25,8 @@ pub enum RichBlock {
     List(RichBlockList),
     #[serde(rename = "blockquote")]
     Blockquote(RichBlockBlockQuotation),
+    #[serde(rename = "expandable_blockquote")]
+    ExpandableBlockQuotation(RichBlockExpandableBlockQuotation),
     #[serde(rename = "pullquote")]
     Pullquote(RichBlockPullQuotation),
     Collage(RichBlockCollage),
@@ -30,8 +34,10 @@ pub enum RichBlock {
     Table(RichBlockTable),
     Details(RichBlockDetails),
     Map(RichBlockMap),
+    Buttons(RichBlockButtons),
     Animation(RichBlockAnimation),
     Audio(RichBlockAudio),
+    Document(RichBlockDocument),
     Photo(RichBlockPhoto),
     Video(RichBlockVideo),
     VoiceNote(RichBlockVoiceNote),
@@ -234,6 +240,20 @@ pub struct RichBlockBlockQuotation {
     pub credit: Option<RichText>,
 }
 
+/// Corresponds to `<blockquote expandable>`.
+///
+/// [The official docs](https://core.telegram.org/bots/api#richblockexpandableblockquotation).
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+pub struct RichBlockExpandableBlockQuotation {
+    /// Content of the block.
+    pub text: RichText,
+
+    /// Credit of the block.
+    pub credit: Option<RichText>,
+}
+
 /// Loosely corresponds to `<aside>`.
 ///
 /// [The official docs](https://core.telegram.org/bots/api#richblockpullquotation).
@@ -294,6 +314,10 @@ pub struct RichBlockTable {
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub is_striped: bool,
 
+    /// `true` if table cells have smaller indents.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub is_compact: bool,
+
     /// Caption of the table.
     ///
     /// Note: unlike every other caption-bearing block, this is a plain
@@ -341,6 +365,20 @@ pub struct RichBlockMap {
     pub caption: Option<RichBlockCaption>,
 }
 
+/// A row of buttons in a rich formatted message.
+///
+/// [The official docs](https://core.telegram.org/bots/api#richblockbuttons).
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+pub struct RichBlockButtons {
+    /// The buttons.
+    pub buttons: Vec<RichMessageButton>,
+
+    /// Horizontal alignment of the buttons.
+    pub align: Option<String>,
+}
+
 /// Corresponds to `<video>`.
 ///
 /// [The official docs](https://core.telegram.org/bots/api#richblockanimation).
@@ -368,6 +406,20 @@ pub struct RichBlockAnimation {
 pub struct RichBlockAudio {
     /// The audio.
     pub audio: Audio,
+
+    /// Caption of the block.
+    pub caption: Option<RichBlockCaption>,
+}
+
+/// A block with a general file.
+///
+/// [The official docs](https://core.telegram.org/bots/api#richblockdocument).
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+pub struct RichBlockDocument {
+    /// The document.
+    pub document: Document,
 
     /// Caption of the block.
     pub caption: Option<RichBlockCaption>,
@@ -602,6 +654,7 @@ mod tests {
                     cells: vec![],
                     is_bordered: false,
                     is_striped: false,
+                    is_compact: false,
                     caption: None,
                 }),
                 "table",
@@ -724,5 +777,47 @@ mod tests {
         for (block, wire_type) in blocks {
             assert_eq!(serde_json::to_value(block).unwrap()["type"], wire_type);
         }
+    }
+
+    #[test]
+    fn new_rich_block_variants_and_compact_tables_serialize() {
+        let document: Document =
+            serde_json::from_str(r#"{"file_id":"id","file_unique_id":"unique","file_size":1}"#)
+                .unwrap();
+
+        assert_eq!(
+            serde_json::to_value(RichBlock::Buttons(RichBlockButtons {
+                buttons: vec![],
+                align: None,
+            }))
+            .unwrap()["type"],
+            "buttons"
+        );
+        assert_eq!(
+            serde_json::to_value(RichBlock::ExpandableBlockQuotation(
+                RichBlockExpandableBlockQuotation { text: plain("quote"), credit: None },
+            ))
+            .unwrap()["type"],
+            "expandable_blockquote"
+        );
+        assert_eq!(
+            serde_json::to_value(RichBlock::Document(RichBlockDocument {
+                document,
+                caption: None,
+            }))
+            .unwrap()["type"],
+            "document"
+        );
+        assert!(
+            serde_json::to_value(RichBlockTable {
+                cells: vec![],
+                is_bordered: false,
+                is_striped: false,
+                is_compact: true,
+                caption: None,
+            })
+            .unwrap()["is_compact"]
+                == true
+        );
     }
 }

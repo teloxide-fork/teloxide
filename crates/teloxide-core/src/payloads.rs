@@ -606,18 +606,38 @@ mod ephemeral_message_tests {
     use crate::{
         payloads::{
             DeleteEphemeralMessage, EditEphemeralMessageCaption, EditEphemeralMessageMedia,
-            EditEphemeralMessageReplyMarkup, EditEphemeralMessageText, SendMessage,
-            SendMessageSetters,
+            EditEphemeralMessageReplyMarkup, EditEphemeralMessageText, PromoteChatMember,
+            SendMessageDraft, SendRichMessage, SendRichMessageDraft,
         },
-        types::{ChatId, InputFile, InputMedia, InputMediaPhoto, MessageId, Recipient},
+        prelude::Requester,
+        requests::{HasPayload, MultipartPayload},
+        types::{
+            ChatId, EphemeralMessageParameters, InputFile, InputMedia, InputMediaPhoto,
+            InputRichMessage, MessageId, Recipient, UserId,
+        },
+        Bot,
     };
+
+    use super::setters::*;
+
+    fn input_rich_message() -> InputRichMessage {
+        InputRichMessage {
+            html: Some("<b>hi</b>".to_owned()),
+            markdown: None,
+            blocks: None,
+            media: None,
+            is_rtl: None,
+            skip_entity_detection: None,
+        }
+    }
 
     #[test]
     fn ephemeral_payloads_serialize_receiver_user_id() {
         let chat_id = Recipient::Id(ChatId(42));
         let ephemeral_message_id = MessageId(7);
 
-        let text = EditEphemeralMessageText::new(chat_id.clone(), 99, ephemeral_message_id, "text");
+        let text =
+            EditEphemeralMessageText::new(chat_id.clone(), 99, ephemeral_message_id).text("text");
         let caption = EditEphemeralMessageCaption::new(chat_id.clone(), 99, ephemeral_message_id);
         let media = EditEphemeralMessageMedia::new(
             chat_id.clone(),
@@ -642,26 +662,71 @@ mod ephemeral_message_tests {
     }
 
     #[test]
-    fn send_message_serializes_receiver_user_id_and_callback_query_id_when_set() {
-        let chat_id = Recipient::Id(ChatId(42));
-        let payload = SendMessage::new(chat_id, "hello")
-            .receiver_user_id(99)
-            .callback_query_id("callback_id");
+    fn send_message_uses_ephemeral_message_parameters() {
+        let request =
+            Bot::new("TEST_TOKEN").send_message(ChatId(42), "hello").ephemeral_message_parameters(
+                EphemeralMessageParameters::new(UserId(99)).callback_query_id("callback_id"),
+            );
 
-        let json = serde_json::to_value(&payload).unwrap();
+        assert!(request.payload_ref().ephemeral_message_parameters.is_some());
 
-        assert_eq!(json["receiver_user_id"], 99);
-        assert_eq!(json["callback_query_id"], "callback_id");
+        let json = serde_json::to_value(request.payload_ref()).unwrap();
+        assert_eq!(json["ephemeral_message_parameters"]["receiver_user_id"], 99);
+        assert_eq!(json["ephemeral_message_parameters"]["callback_query_id"], "callback_id");
+        assert!(json.get("receiver_user_id").is_none());
+        assert!(json.get("callback_query_id").is_none());
     }
 
     #[test]
-    fn send_message_omits_receiver_user_id_and_callback_query_id_when_unset() {
+    fn serializes_10_3_ephemeral_edits_and_permissions() {
         let chat_id = Recipient::Id(ChatId(42));
-        let payload = SendMessage::new(chat_id, "hello");
+        let caption = EditEphemeralMessageCaption::new(chat_id.clone(), 99, MessageId(7))
+            .show_caption_above_media(true);
+        let text = EditEphemeralMessageText::new(chat_id.clone(), 99, MessageId(7))
+            .rich_message(input_rich_message());
+        let promote = PromoteChatMember::new(chat_id, UserId(99)).can_send_welcome_messages(true);
 
-        let json = serde_json::to_value(&payload).unwrap();
+        assert_eq!(serde_json::to_value(caption).unwrap()["show_caption_above_media"], true);
+        let text = serde_json::to_value(text).unwrap();
+        assert_eq!(text["rich_message"]["html"], "<b>hi</b>");
+        assert!(text.get("text").is_none());
+        assert_eq!(serde_json::to_value(promote).unwrap()["can_send_welcome_messages"], true);
+    }
 
-        assert!(json.get("receiver_user_id").is_none());
-        assert!(json.get("callback_query_id").is_none());
+    #[test]
+    fn serializes_10_3_draft_and_rich_message_parameters() {
+        let message_draft = SendMessageDraft::new(ChatId(42), 7).can_stop(true).keep_on_stop(true);
+        let rich_message = SendRichMessage::new(Recipient::Id(ChatId(42)), input_rich_message())
+            .ephemeral_message_parameters(EphemeralMessageParameters::new(UserId(99)));
+        let rich_draft = SendRichMessageDraft::new(ChatId(42), 7, input_rich_message())
+            .can_stop(true)
+            .keep_on_stop(true);
+
+        assert_eq!(serde_json::to_value(message_draft).unwrap()["can_stop"], true);
+        assert_eq!(
+            serde_json::to_value(rich_message).unwrap()["ephemeral_message_parameters"]
+                ["receiver_user_id"],
+            99
+        );
+        assert_eq!(serde_json::to_value(rich_draft).unwrap()["keep_on_stop"], true);
+    }
+
+    #[test]
+    fn edit_ephemeral_message_media_is_multipart() {
+        let payload = EditEphemeralMessageMedia::new(
+            Recipient::Id(ChatId(42)),
+            99,
+            MessageId(7),
+            InputMedia::Photo(InputMediaPhoto::new(InputFile::memory("media"))),
+        );
+        let mut files = Vec::new();
+
+        payload.copy_files(&mut |file| files.push(file));
+
+        assert_eq!(files.len(), 1);
+        assert!(serde_json::to_value(payload).unwrap()["media"]["media"]
+            .as_str()
+            .unwrap()
+            .starts_with("attach://"));
     }
 }

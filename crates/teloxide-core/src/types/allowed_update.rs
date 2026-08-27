@@ -30,4 +30,18 @@ pub enum AllowedUpdate {
     ChatBoost,
     RemovedChatBoost,
     ManagedBot,
+    StoppedMessageGeneration,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AllowedUpdate;
+
+    #[test]
+    fn serializes_stopped_message_generation() {
+        assert_eq!(
+            serde_json::to_string(&AllowedUpdate::StoppedMessageGeneration).unwrap(),
+            "\"stopped_message_generation\""
+        );
+    }
 }

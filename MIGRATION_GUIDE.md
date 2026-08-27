@@ -5,6 +5,18 @@ Note that the list of required changes is not fully exhaustive and it may lack s
 
 ### teloxide-core
 
+TBA 10.3 replaced the `receiver_user_id` and `callback_query_id` parameters on ephemeral-message send methods with `EphemeralMessageParameters`:
+
+```rust
+// Before (Bot API 10.2)
+bot.send_message(chat_id, "text").receiver_user_id(user_id).callback_query_id(query_id);
+
+// After (Bot API 10.3)
+bot.send_message(chat_id, "text").ephemeral_message_parameters(
+    EphemeralMessageParameters::new(user_id).callback_query_id(query_id),
+);
+```
+
 TBA 10.2 made the `message_id` field of `ReplyParameters` optional (`Option<MessageId>`, previously `MessageId`), since a reply can now instead identify an ephemeral message via the new `ephemeral_message_id` field. Exactly one of `message_id`/`ephemeral_message_id` must be set. The `ReplyParameters::new(message_id)` constructor is unaffected and still takes a plain `MessageId`; only code that reads the `message_id` field directly, or constructs `ReplyParameters` with struct-literal syntax, needs to change:
 
 ```diff
@@ -13,6 +25,30 @@ TBA 10.2 made the `message_id` field of `ReplyParameters` optional (`Option<Mess
 
 -ReplyParameters { message_id, ..ReplyParameters::default() }
 +ReplyParameters { message_id: Some(message_id), ..ReplyParameters::default() }
+```
+
+Bot API 10.3 makes the `text` parameter of `edit_ephemeral_message_text` optional, because an `InputRichMessage` can be supplied instead. Set text with the builder rather than passing it to the constructor:
+
+```diff
+-bot.edit_ephemeral_message_text(chat_id, user_id, message_id, "new text").await?;
++bot.edit_ephemeral_message_text(chat_id, user_id, message_id).text("new text").await?;
+```
+
+Because it now carries `InputRichMessage`, `EditEphemeralMessageText` no longer derives `PartialEq`, `Eq`, or `Hash`, matching the existing guidance for rich-message payloads.
+
+The same corrected TBA 10.2 metadata makes `InputRichBlockMap::{zoom, width, height}` optional. Struct literals must wrap supplied values in `Some(...)`; the existing `InputRichBlockMap::new(location, zoom, width, height)` constructor remains compatible, while `InputRichBlockMap::without_dimensions(location, zoom)` omits the dimensions:
+
+```diff
+ InputRichBlockMap {
+     location,
+-    zoom,
+-    width,
+-    height,
++    zoom: Some(zoom),
++    width: Some(width),
++    height: Some(height),
+     caption: None,
+ }
 ```
 
 TBA 10.2's rich-message input (`InputRichMessage`) can now carry structured `blocks`/`media` content in addition to `html`/`markdown`. Because of this:

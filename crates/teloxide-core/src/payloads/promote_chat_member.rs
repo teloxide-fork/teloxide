@@ -49,6 +49,8 @@ impl_payload! {
             pub can_manage_direct_messages: bool,
             /// Pass True if the administrator can manage member tags
             pub can_manage_tags: bool,
+            /// Pass True if the administrator can manage chat welcome messages or directly send them in the case of bots
+            pub can_send_welcome_messages: bool,
         }
     }
 }

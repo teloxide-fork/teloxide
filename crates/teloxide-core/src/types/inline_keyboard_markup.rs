@@ -20,6 +20,9 @@ pub struct InlineKeyboardMarkup {
     ///
     /// [`InlineKeyboardButton`]: crate::types::InlineKeyboardButton
     pub inline_keyboard: Vec<Vec<InlineKeyboardButton>>,
+
+    /// `true` if the keyboard forces a reply from the user.
+    pub force_reply: Option<bool>,
 }
 
 /// Build `InlineKeyboardMarkup`.
@@ -44,6 +47,7 @@ impl InlineKeyboardMarkup {
                 .map(<_>::into_iter)
                 .map(<_>::collect)
                 .collect(),
+            force_reply: None,
         }
     }
 
@@ -90,7 +94,10 @@ mod tests {
         let markup =
             InlineKeyboardMarkup::default().append_row(vec![button1.clone(), button2.clone()]);
 
-        let expected = InlineKeyboardMarkup { inline_keyboard: vec![vec![button1, button2]] };
+        let expected = InlineKeyboardMarkup {
+            inline_keyboard: vec![vec![button1, button2]],
+            force_reply: None,
+        };
 
         assert_eq!(markup, expected);
     }
@@ -104,7 +111,10 @@ mod tests {
             .append_row(vec![button1.clone()])
             .append_to_row(0, button2.clone());
 
-        let expected = InlineKeyboardMarkup { inline_keyboard: vec![vec![button1, button2]] };
+        let expected = InlineKeyboardMarkup {
+            inline_keyboard: vec![vec![button1, button2]],
+            force_reply: None,
+        };
 
         assert_eq!(markup, expected);
     }
@@ -118,8 +128,20 @@ mod tests {
             .append_row(vec![button1.clone()])
             .append_to_row(1, button2.clone());
 
-        let expected = InlineKeyboardMarkup { inline_keyboard: vec![vec![button1], vec![button2]] };
+        let expected = InlineKeyboardMarkup {
+            inline_keyboard: vec![vec![button1], vec![button2]],
+            force_reply: None,
+        };
 
         assert_eq!(markup, expected);
+    }
+
+    #[test]
+    fn deserializes_force_reply() {
+        let markup: InlineKeyboardMarkup =
+            serde_json::from_str(r#"{"inline_keyboard":[],"force_reply":true}"#).unwrap();
+
+        assert_eq!(markup.force_reply, Some(true));
+        assert_eq!(serde_json::to_value(markup).unwrap()["force_reply"], true);
     }
 }

@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added support for Telegram Bot API 10.3
+  - Rich-message buttons and blocks, ephemeral message parameters, generation updates, reply markup, permissions, and community/gift fields
+  - `Update::filter_stopped_message_generation` and its dispatcher allowed-update hint
+  - `receiver_user_id`/`callback_query_id` send-method parameters were replaced by `ephemeral_message_parameters` [**BC**]
+  - See [its changelog](crates/teloxide-core/CHANGELOG.md) for more information
 - Added support for Telegram Bot API 10.2 [**BC**]
   - Rich-message input, ephemeral messages, communities, and subscription updates
   - See [its changelog](crates/teloxide-core/CHANGELOG.md) for more information

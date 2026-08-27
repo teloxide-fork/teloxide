@@ -1,5 +1,5 @@
 use crate::types::{
-    ButtonStyle, CallbackGame, CopyTextButton, CustomEmojiId, LoginUrl,
+    ButtonStyle, CallbackGame, CopyTextButton, CustomEmojiId, DisabledButton, LoginUrl,
     SwitchInlineQueryChosenChat, True, WebAppInfo,
 };
 use serde::{Deserialize, Serialize};
@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 #[serde_with::skip_serializing_none]
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields)]
 pub struct InlineKeyboardButton {
     /// Label text on the button.
     pub text: String,
@@ -97,6 +98,9 @@ pub enum InlineKeyboardButtonKind {
     /// Description of the button that copies the specified text to the
     /// clipboard.
     CopyText(CopyTextButton),
+
+    /// Marks the button as unavailable.
+    Disabled(DisabledButton),
 
     /// Description of the game that will be launched when the user presses the
     /// button.
@@ -228,5 +232,51 @@ impl InlineKeyboardButton {
         T: Into<String>,
     {
         Self::new(text, InlineKeyboardButtonKind::Pay(True))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::types::DisabledButton;
+
+    use super::*;
+
+    #[test]
+    fn disabled_button_deserializes_without_an_action() {
+        let button: InlineKeyboardButton =
+            serde_json::from_str(r#"{"text":"Not available","disabled":{}}"#).unwrap();
+
+        assert_eq!(button.kind, InlineKeyboardButtonKind::Disabled(DisabledButton {}));
+    }
+
+    #[test]
+    fn disabled_button_serializes_without_an_action() {
+        let button = InlineKeyboardButton::new(
+            "Not available",
+            InlineKeyboardButtonKind::Disabled(DisabledButton {}),
+        );
+
+        assert_eq!(
+            serde_json::to_value(button).unwrap(),
+            serde_json::json!({"text": "Not available", "disabled": {}}),
+        );
+    }
+
+    #[test]
+    fn disabled_button_cannot_be_combined_with_an_action() {
+        assert!(serde_json::from_str::<InlineKeyboardButton>(
+            r#"{"text":"Not available","disabled":{},"callback_data":"available"}"#,
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn callback_button_serializes_as_before() {
+        let button = InlineKeyboardButton::callback("Available", "available");
+
+        assert_eq!(
+            serde_json::to_value(button).unwrap(),
+            serde_json::json!({"text": "Available", "callback_data": "available"}),
+        );
     }
 }

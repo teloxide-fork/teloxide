@@ -1443,10 +1443,9 @@ macro_rules! requester_forward {
     (@method edit_ephemeral_message_text $body:ident $ty:ident) => {
         type EditEphemeralMessageText = $ty![EditEphemeralMessageText];
 
-        fn edit_ephemeral_message_text<C, T>(&self, chat_id: C, receiver_user_id: i64, ephemeral_message_id: MessageId, text: T) -> Self::EditEphemeralMessageText where C: Into<Recipient>,
-        T: Into<String> {
+        fn edit_ephemeral_message_text<C>(&self, chat_id: C, receiver_user_id: i64, ephemeral_message_id: MessageId) -> Self::EditEphemeralMessageText where C: Into<Recipient> {
             let this = self;
-            $body!(edit_ephemeral_message_text this (chat_id: C, receiver_user_id: i64, ephemeral_message_id: MessageId, text: T))
+            $body!(edit_ephemeral_message_text this (chat_id: C, receiver_user_id: i64, ephemeral_message_id: MessageId))
         }
     };
     (@method edit_ephemeral_message_caption $body:ident $ty:ident) => {

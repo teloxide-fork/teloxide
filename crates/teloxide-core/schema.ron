@@ -40,7 +40,7 @@
 //! [github]: https://github.com/WaffleLapkin/tg-methods-schema
 
 Schema(
-    api_version: ApiVersion(ver: "10.2", date: "July 14, 2026"),
+    api_version: ApiVersion(ver: "10.3", date: "August 24, 2026"),
     methods: [
         Method(
             names: ("getUpdates", "GetUpdates", "get_updates"),
@@ -236,14 +236,9 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)")
                 ),
                 Param(
-                    name: "receiver_user_id",
-                    ty: Option(i64),
-                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
-                ),
-                Param(
-                    name: "callback_query_id",
-                    ty: Option(String),
-                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                    name: "ephemeral_message_parameters",
+                    ty: Option(RawTy("EphemeralMessageParameters")),
+                    descr: Doc(md: "A JSON-serialized object containing the parameters of the ephemeral message to send"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -364,6 +359,16 @@ Schema(
                     ty: Option(ArrayOf(RawTy("MessageEntity"))),
                     descr: Doc(md: "A JSON-serialized list of special entities that appear in message text, which can be specified instead of parse_mode"),
                 ),
+                Param(
+                    name: "can_stop",
+                    ty: Option(bool),
+                    descr: Doc(md: "Pass True to show the user a button to stop further drafts"),
+                ),
+                Param(
+                    name: "keep_on_stop",
+                    ty: Option(bool),
+                    descr: Doc(md: "Pass True to keep the draft in the chat when the button is pressed"),
+                ),
             ],
         ),
         Method(
@@ -395,6 +400,11 @@ Schema(
                     name: "direct_messages_topic_id",
                     ty: Option(RawTy("TopicId")),
                     descr: Doc(md: "Identifier of the direct messages topic to which the message will be sent; required if the message is sent to a direct messages chat"),
+                ),
+                Param(
+                    name: "ephemeral_message_parameters",
+                    ty: Option(RawTy("EphemeralMessageParameters")),
+                    descr: Doc(md: "A JSON-serialized object containing the parameters of the ephemeral message to send"),
                 ),
                 Param(
                     name: "rich_message",
@@ -473,6 +483,16 @@ Schema(
                     name: "rich_message",
                     ty: RawTy("InputRichMessage"),
                     descr: Doc(md: "The partial message to be streamed"),
+                ),
+                Param(
+                    name: "can_stop",
+                    ty: Option(bool),
+                    descr: Doc(md: "Pass True to show the user a button to stop further drafts"),
+                ),
+                Param(
+                    name: "keep_on_stop",
+                    ty: Option(bool),
+                    descr: Doc(md: "Pass True to keep the draft in the chat when the button is pressed"),
                 ),
             ],
         ),
@@ -784,14 +804,9 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)")
                 ),
                 Param(
-                    name: "receiver_user_id",
-                    ty: Option(i64),
-                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
-                ),
-                Param(
-                    name: "callback_query_id",
-                    ty: Option(String),
-                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                    name: "ephemeral_message_parameters",
+                    ty: Option(RawTy("EphemeralMessageParameters")),
+                    descr: Doc(md: "A JSON-serialized object containing the parameters of the ephemeral message to send"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -894,8 +909,7 @@ Schema(
             params: [
                 Param(name: "business_connection_id", ty: Option(RawTy("BusinessConnectionId")), descr: Doc(md: "Unique identifier of the business connection on behalf of which the message will be sent")),
                 Param(name: "chat_id", ty: RawTy("Recipient"), descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)")),
-                Param(name: "receiver_user_id", ty: Option(i64), descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message")),
-                Param(name: "callback_query_id", ty: Option(String), descr: Doc(md: "Unique identifier of the callback query to which the message is a response")),
+                Param(name: "ephemeral_message_parameters", ty: Option(RawTy("EphemeralMessageParameters")), descr: Doc(md: "A JSON-serialized object containing the parameters of the ephemeral message to send")),
                 Param(name: "message_thread_id", ty: Option(RawTy("ThreadId")), descr: Doc(md: "Unique identifier for the target message thread (topic) of a forum; for forum supergroups and private chats of bots with forum topic mode enabled only")),
                 Param(name: "direct_messages_topic_id", ty: Option(RawTy("TopicId")), descr: Doc(md: "Identifier of the direct messages topic to which the message will be sent; required if the message is sent to a direct messages chat")),
                 Param(name: "live_photo", ty: RawTy("InputFile"), descr: Doc(md: "Live photo video to send. The video must be no longer than 10 seconds and must not exceed 10 MB in size. Pass a file_id as String to send a video that exists on the Telegram servers (recommended) or upload a new video using multipart/form-data. [More information on Sending Files »] Sending live photos by a URL is currently unsupported.", md_links: {"More information on Sending Files »": "https://core.telegram.org/bots/api#sending-files"})),
@@ -938,14 +952,9 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)"),
                 ),
                 Param(
-                    name: "receiver_user_id",
-                    ty: Option(i64),
-                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
-                ),
-                Param(
-                    name: "callback_query_id",
-                    ty: Option(String),
-                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                    name: "ephemeral_message_parameters",
+                    ty: Option(RawTy("EphemeralMessageParameters")),
+                    descr: Doc(md: "A JSON-serialized object containing the parameters of the ephemeral message to send"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -1073,14 +1082,9 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)"),
                 ),
                 Param(
-                    name: "receiver_user_id",
-                    ty: Option(i64),
-                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
-                ),
-                Param(
-                    name: "callback_query_id",
-                    ty: Option(String),
-                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                    name: "ephemeral_message_parameters",
+                    ty: Option(RawTy("EphemeralMessageParameters")),
+                    descr: Doc(md: "A JSON-serialized object containing the parameters of the ephemeral message to send"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -1201,14 +1205,9 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)"),
                 ),
                 Param(
-                    name: "receiver_user_id",
-                    ty: Option(i64),
-                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
-                ),
-                Param(
-                    name: "callback_query_id",
-                    ty: Option(String),
-                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                    name: "ephemeral_message_parameters",
+                    ty: Option(RawTy("EphemeralMessageParameters")),
+                    descr: Doc(md: "A JSON-serialized object containing the parameters of the ephemeral message to send"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -1365,14 +1364,9 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)"),
                 ),
                 Param(
-                    name: "receiver_user_id",
-                    ty: Option(i64),
-                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
-                ),
-                Param(
-                    name: "callback_query_id",
-                    ty: Option(String),
-                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                    name: "ephemeral_message_parameters",
+                    ty: Option(RawTy("EphemeralMessageParameters")),
+                    descr: Doc(md: "A JSON-serialized object containing the parameters of the ephemeral message to send"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -1514,14 +1508,9 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)"),
                 ),
                 Param(
-                    name: "receiver_user_id",
-                    ty: Option(i64),
-                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
-                ),
-                Param(
-                    name: "callback_query_id",
-                    ty: Option(String),
-                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                    name: "ephemeral_message_parameters",
+                    ty: Option(RawTy("EphemeralMessageParameters")),
+                    descr: Doc(md: "A JSON-serialized object containing the parameters of the ephemeral message to send"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -1634,14 +1623,9 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)"),
                 ),
                 Param(
-                    name: "receiver_user_id",
-                    ty: Option(i64),
-                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
-                ),
-                Param(
-                    name: "callback_query_id",
-                    ty: Option(String),
-                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                    name: "ephemeral_message_parameters",
+                    ty: Option(RawTy("EphemeralMessageParameters")),
+                    descr: Doc(md: "A JSON-serialized object containing the parameters of the ephemeral message to send"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -1921,14 +1905,9 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)"),
                 ),
                 Param(
-                    name: "receiver_user_id",
-                    ty: Option(i64),
-                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
-                ),
-                Param(
-                    name: "callback_query_id",
-                    ty: Option(String),
-                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                    name: "ephemeral_message_parameters",
+                    ty: Option(RawTy("EphemeralMessageParameters")),
+                    descr: Doc(md: "A JSON-serialized object containing the parameters of the ephemeral message to send"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -2281,14 +2260,9 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)")
                 ),
                 Param(
-                    name: "receiver_user_id",
-                    ty: Option(i64),
-                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
-                ),
-                Param(
-                    name: "callback_query_id",
-                    ty: Option(String),
-                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                    name: "ephemeral_message_parameters",
+                    ty: Option(RawTy("EphemeralMessageParameters")),
+                    descr: Doc(md: "A JSON-serialized object containing the parameters of the ephemeral message to send"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -2410,14 +2384,9 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`)")
                 ),
                 Param(
-                    name: "receiver_user_id",
-                    ty: Option(i64),
-                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
-                ),
-                Param(
-                    name: "callback_query_id",
-                    ty: Option(String),
-                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                    name: "ephemeral_message_parameters",
+                    ty: Option(RawTy("EphemeralMessageParameters")),
+                    descr: Doc(md: "A JSON-serialized object containing the parameters of the ephemeral message to send"),
                 ),
                 Param(
                     name: "message_thread_id",
@@ -3239,6 +3208,11 @@ Schema(
                     name: "can_manage_tags",
                     ty: Option(bool),
                     descr: Doc(md: "Pass True if the administrator can manage member tags"),
+                ),
+                Param(
+                    name: "can_send_welcome_messages",
+                    ty: Option(bool),
+                    descr: Doc(md: "Pass True if the administrator can manage chat welcome messages or directly send them in the case of bots"),
                 ),
             ],
         ),
@@ -4977,8 +4951,8 @@ Schema(
                 ),
                 Param(
                     name: "text",
-                    ty: String,
-                    descr: Doc(md: "New text of the message, 1-4096 characters after entities parsing")
+                    ty: Option(String),
+                    descr: Doc(md: "New text of the message, 1-4096 characters after entities parsing; required if `rich_message` isn't specified")
                 ),
                 Param(
                     name: "parse_mode",
@@ -4992,6 +4966,11 @@ Schema(
                     name: "entities",
                     ty: Option(ArrayOf(RawTy("MessageEntity"))),
                     descr: Doc(md: "List of special entities that appear in message text, which can be specified instead of _parse\\_mode_"),
+                ),
+                Param(
+                    name: "rich_message",
+                    ty: Option(RawTy("InputRichMessage")),
+                    descr: Doc(md: "New rich content of the message; required if `text` isn't specified"),
                 ),
                 Param(
                     name: "link_preview_options",
@@ -5049,6 +5028,11 @@ Schema(
                     descr: Doc(md: "List of special entities that appear in the caption, which can be specified instead of _parse\\_mode_"),
                 ),
                 Param(
+                    name: "show_caption_above_media",
+                    ty: Option(bool),
+                    descr: Doc(md: "Pass True if the caption must be shown above the message media. Supported only for animation, photo and video messages"),
+                ),
+                Param(
                     name: "reply_markup",
                     ty: Option(RawTy("InlineKeyboardMarkup")),
                     descr: Doc(
@@ -5083,7 +5067,7 @@ Schema(
                 Param(
                     name: "media",
                     ty: RawTy("InputMedia"),
-                    descr: Doc(md: "A JSON-serialized object for the new media content of the message. A new file can't be uploaded; use a previously uploaded file via its file_id or specify a URL.")
+                    descr: Doc(md: "A JSON-serialized object for the new media content of the message.")
                 ),
                 Param(
                     name: "reply_markup",
@@ -5318,14 +5302,9 @@ Schema(
                     descr: Doc(md: "Unique identifier for the target chat or username of the target channel (in the format `@channelusername`).")
                 ),
                 Param(
-                    name: "receiver_user_id",
-                    ty: Option(i64),
-                    descr: Doc(md: "Unique identifier of the user to whom the message will be sent as an ephemeral message"),
-                ),
-                Param(
-                    name: "callback_query_id",
-                    ty: Option(String),
-                    descr: Doc(md: "Unique identifier of the callback query to which the message is a response"),
+                    name: "ephemeral_message_parameters",
+                    ty: Option(RawTy("EphemeralMessageParameters")),
+                    descr: Doc(md: "A JSON-serialized object containing the parameters of the ephemeral message to send"),
                 ),
                 Param(
                     name: "message_thread_id",

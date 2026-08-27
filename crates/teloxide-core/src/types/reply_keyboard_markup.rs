@@ -58,6 +58,9 @@ pub struct KeyboardMarkup {
     /// [`Message`]: crate::types::Message
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub selective: bool,
+
+    /// `true` if the keyboard forces a reply from the user.
+    pub force_reply: Option<bool>,
 }
 
 impl KeyboardMarkup {
@@ -74,6 +77,7 @@ impl KeyboardMarkup {
             one_time_keyboard: false,
             input_field_placeholder: String::new(),
             selective: false,
+            force_reply: None,
         }
     }
 
@@ -165,5 +169,14 @@ mod tests {
         let expected = r#"{"keyboard":[[{"text":"a"},{"text":"b"},{"text":"c"},{"text":"d"}]],"is_persistent":true,"resize_keyboard":true,"one_time_keyboard":true,"selective":true}"#;
 
         assert!(serde_json::ser::to_string(&keyboard_markup).is_ok_and(|s| s.eq(expected)));
+    }
+
+    #[test]
+    fn deserializes_force_reply() {
+        let markup: KeyboardMarkup =
+            serde_json::from_str(r#"{"keyboard":[],"force_reply":true}"#).unwrap();
+
+        assert_eq!(markup.force_reply, Some(true));
+        assert_eq!(serde_json::to_value(markup).unwrap()["force_reply"], true);
     }
 }

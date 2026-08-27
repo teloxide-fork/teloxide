@@ -24,8 +24,8 @@ pub enum InputMedia {
 /// Media that can be embedded in an
 /// [`InputRichMessageMedia`](crate::types::InputRichMessageMedia).
 ///
-/// Unlike [`InputMedia`], this union intentionally excludes documents and live
-/// photos because the Bot API does not allow them in rich messages.
+/// Unlike [`InputMedia`], this union intentionally excludes live photos because
+/// the Bot API does not allow them in rich messages.
 #[derive(Clone, Debug, Serialize)]
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 #[cfg_attr(test, schemars(inline))]
@@ -34,6 +34,7 @@ pub enum InputMedia {
 pub enum InputRichMedia {
     Animation(InputMediaAnimation),
     Audio(InputMediaAudio),
+    Document(InputMediaDocument),
     Photo(InputMediaPhoto),
     Video(InputMediaVideo),
     VoiceNote(InputMediaVoiceNote),
@@ -943,7 +944,8 @@ impl InputRichMedia {
     pub(crate) fn copy_into(&self, into: &mut dyn FnMut(InputFile)) {
         match self {
             Self::Animation(InputMediaAnimation { media, thumbnail, .. })
-            | Self::Audio(InputMediaAudio { media, thumbnail, .. }) => {
+            | Self::Audio(InputMediaAudio { media, thumbnail, .. })
+            | Self::Document(InputMediaDocument { media, thumbnail, .. }) => {
                 media.copy_into(into);
                 thumbnail.copy_into(into);
             }
@@ -960,7 +962,8 @@ impl InputRichMedia {
     pub(crate) fn move_into(&mut self, into: &mut dyn FnMut(InputFile)) {
         match self {
             Self::Animation(InputMediaAnimation { media, thumbnail, .. })
-            | Self::Audio(InputMediaAudio { media, thumbnail, .. }) => {
+            | Self::Audio(InputMediaAudio { media, thumbnail, .. })
+            | Self::Document(InputMediaDocument { media, thumbnail, .. }) => {
                 media.move_into(into);
                 thumbnail.move_into(into);
             }
@@ -1124,6 +1127,7 @@ mod tests {
         let media = [
             InputRichMedia::Animation(InputMediaAnimation::new(InputFile::memory("animation"))),
             InputRichMedia::Audio(InputMediaAudio::new(InputFile::memory("audio"))),
+            InputRichMedia::Document(InputMediaDocument::new(InputFile::memory("document"))),
             InputRichMedia::Photo(InputMediaPhoto::new(InputFile::memory("photo"))),
             InputRichMedia::Video(InputMediaVideo::new(InputFile::memory("video"))),
             InputRichMedia::VoiceNote(InputMediaVoiceNote::new(InputFile::memory("voice"))),
@@ -1133,6 +1137,6 @@ mod tests {
         for medium in media {
             medium.copy_into(&mut |_| files += 1);
         }
-        assert_eq!(files, 5);
+        assert_eq!(files, 6);
     }
 }

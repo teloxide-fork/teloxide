@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Support for TBA 10.3
+  - Rich-message buttons, expandable quotations, document blocks, and compact tables
+  - `EphemeralMessageParameters`, message-generation-stopped updates and `AllowedUpdate::StoppedMessageGeneration`, reply-markup fields, welcome-message permissions, and community/gift fields
+  - Send-method `receiver_user_id`/`callback_query_id` parameters were replaced by `ephemeral_message_parameters` [**BC**]
+  - `edit_ephemeral_message_text`'s `text` parameter is now optional (an alternative to the new `rich_message` parameter) [**BC**]
+  - `EditEphemeralMessageText` no longer derives `PartialEq`/`Eq`/`Hash`, since its `rich_message: InputRichMessage` parameter can carry structured content [**BC**]
 - Support for TBA 10.2
   - Rich-message input: `InputRichBlock` type tree, `InputRichMessageMedia`, `InputMediaVoiceNote`, and `InputRichMessage::blocks`/`media` fields
   - Ephemeral messages: `receiver_user_id`/`callback_query_id` send parameters, `edit_ephemeral_message_text`/`_media`/`_caption`/`_reply_markup` and `delete_ephemeral_message` methods, `BotCommand::is_ephemeral`, `Message::receiver_user`/`ephemeral_message_id`, and `ReplyParameters::ephemeral_message_id`

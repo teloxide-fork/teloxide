@@ -1,8 +1,9 @@
 use serde::{ser::SerializeStruct, Serialize};
 
 use crate::types::{
-    InputFile, InputFileLike, InputMediaAnimation, InputMediaAudio, InputMediaPhoto,
-    InputMediaVideo, InputMediaVoiceNote, Location, RichBlockCaption, RichBlockTableCell, RichText,
+    InputFile, InputFileLike, InputMediaAnimation, InputMediaAudio, InputMediaDocument,
+    InputMediaPhoto, InputMediaVideo, InputMediaVoiceNote, Location, RichBlockCaption,
+    RichBlockTableCell, RichMessageButton, RichText,
 };
 
 /// A block in a rich formatted message to be sent.
@@ -22,6 +23,8 @@ pub enum InputRichBlock {
     List(InputRichBlockList),
     #[serde(rename = "blockquote")]
     BlockQuotation(InputRichBlockBlockQuotation),
+    #[serde(rename = "expandable_blockquote")]
+    ExpandableBlockQuotation(InputRichBlockExpandableBlockQuotation),
     #[serde(rename = "pullquote")]
     PullQuotation(InputRichBlockPullQuotation),
     Collage(InputRichBlockCollage),
@@ -29,8 +32,10 @@ pub enum InputRichBlock {
     Table(InputRichBlockTable),
     Details(InputRichBlockDetails),
     Map(InputRichBlockMap),
+    Buttons(InputRichBlockButtons),
     Animation(InputRichBlockAnimation),
     Audio(InputRichBlockAudio),
+    Document(InputRichBlockDocument),
     Photo(InputRichBlockPhoto),
     Video(InputRichBlockVideo),
     VoiceNote(InputRichBlockVoiceNote),
@@ -216,6 +221,28 @@ pub struct InputRichBlockPullQuotation {
     pub text: RichText,
     pub credit: Option<RichText>,
 }
+
+/// An expandable block quotation.
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Serialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+pub struct InputRichBlockExpandableBlockQuotation {
+    pub text: RichText,
+    pub credit: Option<RichText>,
+}
+impl InputRichBlockExpandableBlockQuotation {
+    pub fn new(text: RichText) -> Self {
+        Self { text, credit: None }
+    }
+    pub fn text(mut self, text: RichText) -> Self {
+        self.text = text;
+        self
+    }
+    pub fn credit(mut self, credit: RichText) -> Self {
+        self.credit = Some(credit);
+        self
+    }
+}
 impl InputRichBlockPullQuotation {
     pub fn new(text: RichText) -> Self {
         Self { text, credit: None }
@@ -266,11 +293,13 @@ pub struct InputRichBlockTable {
     pub is_bordered: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub is_striped: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub is_compact: bool,
     pub caption: Option<RichText>,
 }
 impl InputRichBlockTable {
     pub fn new(cells: Vec<Vec<RichBlockTableCell>>) -> Self {
-        Self { cells, is_bordered: false, is_striped: false, caption: None }
+        Self { cells, is_bordered: false, is_striped: false, is_compact: false, caption: None }
     }
     pub fn cells(mut self, cells: Vec<Vec<RichBlockTableCell>>) -> Self {
         self.cells = cells;
@@ -282,6 +311,10 @@ impl InputRichBlockTable {
     }
     pub fn is_striped(mut self, value: bool) -> Self {
         self.is_striped = value;
+        self
+    }
+    pub fn is_compact(mut self, value: bool) -> Self {
+        self.is_compact = value;
         self
     }
     pub fn caption(mut self, caption: RichText) -> Self {
@@ -321,29 +354,56 @@ impl InputRichBlockDetails {
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 pub struct InputRichBlockMap {
     pub location: Location,
-    pub zoom: i64,
-    pub width: i64,
-    pub height: i64,
+    pub zoom: Option<i64>,
+    pub width: Option<i64>,
+    pub height: Option<i64>,
     pub caption: Option<RichBlockCaption>,
 }
+
+/// A row of buttons in a rich formatted message.
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Serialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+pub struct InputRichBlockButtons {
+    pub buttons: Vec<RichMessageButton>,
+    pub align: Option<String>,
+}
+impl InputRichBlockButtons {
+    pub fn new(buttons: Vec<RichMessageButton>) -> Self {
+        Self { buttons, align: None }
+    }
+    pub fn buttons(mut self, buttons: Vec<RichMessageButton>) -> Self {
+        self.buttons = buttons;
+        self
+    }
+    pub fn align(mut self, align: impl Into<String>) -> Self {
+        self.align = Some(align.into());
+        self
+    }
+}
 impl InputRichBlockMap {
+    /// Creates a map with explicit zoom and dimensions.
     pub const fn new(location: Location, zoom: i64, width: i64, height: i64) -> Self {
-        Self { location, zoom, width, height, caption: None }
+        Self { location, zoom: Some(zoom), width: Some(width), height: Some(height), caption: None }
+    }
+    /// Creates a map without dimensions, allowing Telegram to choose them.
+    pub const fn without_dimensions(location: Location, zoom: i64) -> Self {
+        Self { location, zoom: Some(zoom), width: None, height: None, caption: None }
     }
     pub const fn location(mut self, location: Location) -> Self {
         self.location = location;
         self
     }
     pub const fn zoom(mut self, zoom: i64) -> Self {
-        self.zoom = zoom;
+        self.zoom = Some(zoom);
         self
     }
     pub const fn width(mut self, width: i64) -> Self {
-        self.width = width;
+        self.width = Some(width);
         self
     }
     pub const fn height(mut self, height: i64) -> Self {
-        self.height = height;
+        self.height = Some(height);
         self
     }
     pub fn caption(mut self, caption: RichBlockCaption) -> Self {
@@ -402,6 +462,7 @@ macro_rules! media_block {
 }
 media_block!(InputRichBlockAnimation, animation, InputMediaAnimation, "animation");
 media_block!(InputRichBlockAudio, audio, InputMediaAudio, "audio");
+media_block!(InputRichBlockDocument, document, InputMediaDocument, "document");
 media_block!(InputRichBlockPhoto, photo, InputMediaPhoto, "photo");
 media_block!(InputRichBlockVideo, video, InputMediaVideo, "video");
 media_block!(InputRichBlockVoiceNote, voice_note, InputMediaVoiceNote, "voice_note");
@@ -433,6 +494,10 @@ impl InputFileLike for InputRichBlock {
                 block.audio.media.copy_into(into);
                 block.audio.thumbnail.copy_into(into);
             }
+            Self::Document(block) => {
+                block.document.media.copy_into(into);
+                block.document.thumbnail.copy_into(into);
+            }
             Self::Photo(block) => block.photo.media.copy_into(into),
             Self::Video(block) => {
                 block.video.media.copy_into(into);
@@ -447,9 +512,11 @@ impl InputFileLike for InputRichBlock {
             | Self::Divider(_)
             | Self::MathematicalExpression(_)
             | Self::Anchor(_)
+            | Self::ExpandableBlockQuotation(_)
             | Self::PullQuotation(_)
             | Self::Table(_)
             | Self::Map(_)
+            | Self::Buttons(_)
             | Self::Thinking(_) => {}
         }
     }
@@ -479,6 +546,10 @@ impl InputFileLike for InputRichBlock {
                 block.audio.media.move_into(into);
                 block.audio.thumbnail.move_into(into);
             }
+            Self::Document(block) => {
+                block.document.media.move_into(into);
+                block.document.thumbnail.move_into(into);
+            }
             Self::Photo(block) => block.photo.media.move_into(into),
             Self::Video(block) => {
                 block.video.media.move_into(into);
@@ -493,9 +564,11 @@ impl InputFileLike for InputRichBlock {
             | Self::Divider(_)
             | Self::MathematicalExpression(_)
             | Self::Anchor(_)
+            | Self::ExpandableBlockQuotation(_)
             | Self::PullQuotation(_)
             | Self::Table(_)
             | Self::Map(_)
+            | Self::Buttons(_)
             | Self::Thinking(_) => {}
         }
     }
@@ -504,7 +577,7 @@ impl InputFileLike for InputRichBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{InputFile, InputMedia, InputMediaVoiceNote};
+    use crate::types::{InputFile, InputMedia, InputMediaDocument, InputMediaVoiceNote};
 
     fn text(text: &str) -> RichText {
         RichText::Plain(text.into())
@@ -603,6 +676,42 @@ mod tests {
     }
 
     #[test]
+    fn map_dimensions_are_optional_in_the_schema() {
+        let schema = serde_json::to_value(schemars::schema_for!(InputRichBlockMap)).unwrap();
+        let required = schema["required"].as_array().unwrap();
+
+        for field in ["zoom", "width", "height"] {
+            assert!(!required.iter().any(|value| value == field));
+            assert!(schema["properties"][field]["type"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|value| value == "null"));
+        }
+
+        let location = Location {
+            longitude: 1.0,
+            latitude: 2.0,
+            horizontal_accuracy: None,
+            live_period: None,
+            heading: None,
+            proximity_alert_radius: None,
+        };
+        let empty =
+            serde_json::to_value(InputRichBlockMap::without_dimensions(location.clone(), 13))
+                .unwrap();
+        assert_eq!(empty["zoom"], 13);
+        assert!(empty.get("width").is_none());
+        assert!(empty.get("height").is_none());
+
+        let configured =
+            serde_json::to_value(InputRichBlockMap::new(location, 13, 640, 480)).unwrap();
+        assert_eq!(configured["zoom"], 13);
+        assert_eq!(configured["width"], 640);
+        assert_eq!(configured["height"], 480);
+    }
+
+    #[test]
     fn serializes_rich_text_captions_and_typed_media_fields() {
         let caption = RichBlockCaption { text: text("caption"), credit: Some(text("credit")) };
         let animation = InputRichBlock::Animation(
@@ -625,5 +734,43 @@ mod tests {
         .unwrap();
         assert_eq!(value["type"], "voice_note");
         assert_eq!(value["media"], "voice");
+    }
+
+    #[test]
+    fn serializes_new_variants_and_discovers_document_uploads() {
+        let document = InputFile::memory("document");
+        let thumbnail = InputFile::memory("thumbnail");
+        let document_wire = serde_json::to_value(&document).unwrap();
+        let thumbnail_wire = serde_json::to_value(&thumbnail).unwrap();
+        let mut block = InputRichBlock::Document(InputRichBlockDocument::new(
+            InputMediaDocument::new(document).thumbnail(thumbnail),
+        ));
+        let mut files = vec![];
+
+        block.copy_into(&mut |file| files.push(file));
+        assert_eq!(files.len(), 2);
+        assert_eq!(serde_json::to_value(&files[0]).unwrap(), document_wire);
+        assert_eq!(serde_json::to_value(&files[1]).unwrap(), thumbnail_wire);
+        block.move_into(&mut |file| files.push(file));
+        assert_eq!(files.len(), 4);
+
+        assert_eq!(
+            serde_json::to_value(InputRichBlock::Buttons(InputRichBlockButtons::new(vec![])))
+                .unwrap()["type"],
+            "buttons"
+        );
+        assert_eq!(
+            serde_json::to_value(InputRichBlock::ExpandableBlockQuotation(
+                InputRichBlockExpandableBlockQuotation::new(text("quote")),
+            ))
+            .unwrap()["type"],
+            "expandable_blockquote"
+        );
+        assert_eq!(serde_json::to_value(&block).unwrap()["type"], "document");
+        assert_eq!(
+            serde_json::to_value(InputRichBlockTable::new(vec![]).is_compact(true)).unwrap()
+                ["is_compact"],
+            true
+        );
     }
 }

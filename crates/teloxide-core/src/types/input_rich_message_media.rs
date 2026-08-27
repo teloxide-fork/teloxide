@@ -32,7 +32,8 @@ impl InputRichMessageMedia {
 #[cfg(test)]
 mod tests {
     use crate::types::{
-        InputFile, InputMediaPhoto, InputMediaVoiceNote, InputRichMedia, InputRichMessageMedia,
+        InputFile, InputMediaDocument, InputMediaPhoto, InputMediaVoiceNote, InputRichMedia,
+        InputRichMessageMedia,
     };
 
     #[test]
@@ -60,14 +61,43 @@ mod tests {
     }
 
     #[test]
-    fn schema_exposes_only_rich_message_media_variants() {
+    fn document_rich_media_preserves_the_public_union_field_and_traverses_its_files() {
+        let document = InputFile::memory("document");
+        let thumbnail = InputFile::memory("thumbnail");
+        let document_wire = serde_json::to_value(&document).unwrap();
+        let thumbnail_wire = serde_json::to_value(&thumbnail).unwrap();
+        let mut media = InputRichMessageMedia::new(
+            "document",
+            InputRichMedia::Document(InputMediaDocument::new(document).thumbnail(thumbnail)),
+        );
+        let mut files = vec![];
+
+        let _: InputRichMedia = media.media.clone();
+
+        let value = serde_json::to_value(&media).unwrap();
+        assert_eq!(value["media"]["type"], "document");
+        assert_eq!(value["media"]["media"], document_wire);
+        assert_eq!(value["media"]["thumbnail"], thumbnail_wire);
+
+        media.media.copy_into(&mut |file| files.push(file));
+        assert_eq!(files.len(), 2);
+        assert_eq!(serde_json::to_value(&files[0]).unwrap(), document_wire);
+        assert_eq!(serde_json::to_value(&files[1]).unwrap(), thumbnail_wire);
+
+        media.media.move_into(&mut |file| files.push(file));
+        assert_eq!(files.len(), 4);
+    }
+
+    #[test]
+    fn schema_exposes_all_rich_message_media_variants() {
         let schema = serde_json::to_value(schemars::schema_for!(InputRichMessageMedia)).unwrap();
         let variants = schema["properties"]["media"]["anyOf"].as_array().unwrap();
 
-        assert_eq!(variants.len(), 5);
+        assert_eq!(variants.len(), 6);
         for variant in [
             "InputMediaAnimation",
             "InputMediaAudio",
+            "InputMediaDocument",
             "InputMediaPhoto",
             "InputMediaVideo",
             "InputMediaVoiceNote",

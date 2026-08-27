@@ -123,6 +123,10 @@ pub struct Administrator {
     #[serde(default)]
     pub can_manage_tags: bool,
 
+    /// `true`, if the administrator can send welcome messages.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub can_send_welcome_messages: bool,
+
     /// `true` if the administrator can add new administrators with a subset of
     /// his own privileges or demote administrators that he has promoted,
     /// directly or indirectly (promoted by administrators that were appointed
@@ -771,6 +775,7 @@ mod tests {
                 can_promote_members: true,
                 can_manage_direct_messages: true,
                 can_manage_tags: false,
+                can_send_welcome_messages: false,
                 can_manage_topics: false,
             }),
         };
@@ -900,5 +905,15 @@ mod tests {
             panic!("expected Administrator");
         };
         assert!(admin.can_manage_tags);
+    }
+
+    #[test]
+    fn administrator_can_send_welcome_messages() {
+        let json = r#"{"status":"administrator","user":{"id":1,"is_bot":false,"first_name":"a"},"can_be_edited":true,"is_anonymous":false,"can_manage_chat":true,"can_delete_messages":false,"can_manage_video_chats":false,"can_restrict_members":false,"can_promote_members":false,"can_change_info":false,"can_invite_users":false,"can_send_welcome_messages":true}"#;
+        let member: ChatMember = serde_json::from_str(json).unwrap();
+        let ChatMemberKind::Administrator(admin) = member.kind else {
+            panic!("expected Administrator");
+        };
+        assert!(admin.can_send_welcome_messages);
     }
 }
