@@ -698,8 +698,7 @@ mod tests {
             proximity_alert_radius: None,
         };
         let empty =
-            serde_json::to_value(InputRichBlockMap::without_dimensions(location.clone(), 13))
-                .unwrap();
+            serde_json::to_value(InputRichBlockMap::without_dimensions(location, 13)).unwrap();
         assert_eq!(empty["zoom"], 13);
         assert!(empty.get("width").is_none());
         assert!(empty.get("height").is_none());

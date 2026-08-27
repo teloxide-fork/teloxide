@@ -617,6 +617,7 @@ pub(crate) mod option_url_from_string {
 // Issue https://github.com/teloxide/teloxide/issues/1135
 // Workaround to avoid flattening with serde-multipart requests (involving
 // file-manipulations)
+#[allow(dead_code)]
 pub(crate) mod msg_id_as_int {
     use crate::types::MessageId;
 
