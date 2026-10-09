@@ -696,7 +696,7 @@ impl_api_error! {
         /// 1. [`SendMessage`]
         ///
         /// [`SendMessage`]: crate::payloads::SendMessage
-        CantInitiateConversation = "Unauthorized: bot can't initiate conversation with a user",
+        CantInitiateConversation = "Forbidden: bot can't initiate conversation with a user",
 
         /// Occurs when you tries to send message to bot.
         ///
@@ -1051,7 +1051,7 @@ mod tests {
             ),
             ("{\"data\": \"Forbidden: user is deactivated\"}", ApiError::UserDeactivated),
             (
-                "{\"data\": \"Unauthorized: bot can't initiate conversation with a user\"}",
+                "{\"data\": \"Forbidden: bot can't initiate conversation with a user\"}",
                 ApiError::CantInitiateConversation,
             ),
             (
