@@ -109,6 +109,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `ApiError::CantInitiateConversation` is now parsed from the `Forbidden: bot can't initiate conversation with a user` error Telegram currently returns instead of `Unauthorized: ...` ([#1392](https://github.com/teloxide/teloxide/pull/1392))
 
+- Fix deserialization of messages with an `external_reply` that has no media (the message was parsed as `MessageKind::Empty`) ([#1420](https://github.com/teloxide/teloxide/issues/1420))
+  - `ExternalReplyInfo::kind` is now of type `Option<ExternalReplyInfoKind>`, not `ExternalReplyInfoKind` [**BC**]
+
 - Add local TBA file downloading support in `crate::net::download` ([#1173](https://github.com/teloxide/teloxide/pull/1173))
 
 - Added schema and rust types checking ([#1396](https://github.com/teloxide/teloxide/pull/1396))

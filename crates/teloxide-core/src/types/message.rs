@@ -3970,4 +3970,35 @@ mod tests {
         assert!(message.rich_message().is_some());
         assert!(message.text().is_none());
     }
+
+    // Regression test for teloxide#1420: an `external_reply` without media must
+    // not turn the whole message into `MessageKind::Empty`.
+    #[test]
+    fn external_reply_without_media_keeps_text_message() {
+        let json = r#"{
+            "message_id": 12,
+            "chat": {"id": 1, "type": "private", "first_name": "A"},
+            "date": 1721162702,
+            "text": "reply",
+            "external_reply": {
+                "origin": {
+                    "type": "channel",
+                    "chat": {"id": -1001234567890, "title": "Chan", "type": "channel"},
+                    "message_id": 5,
+                    "date": 1721162577
+                },
+                "chat": {"id": -1001234567890, "title": "Chan", "type": "channel"},
+                "message_id": 5
+            }
+        }"#;
+
+        let message: Message = serde_json::from_str(json).unwrap();
+
+        let MessageKind::Common(common) = &message.kind else {
+            panic!("expected MessageKind::Common, got {:?}", message.kind);
+        };
+        assert!(matches!(common.media_kind, MediaKind::Text(_)));
+        assert_eq!(message.text(), Some("reply"));
+        assert_eq!(common.external_reply.as_ref().unwrap().kind, None);
+    }
 }
