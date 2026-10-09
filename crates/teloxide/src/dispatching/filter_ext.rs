@@ -9,6 +9,17 @@ use crate::{
     types::{AllowedUpdate, Message, Update, UpdateKind},
 };
 
+/// A message that another message replies to.
+///
+/// This is the dependency inserted by
+/// [`MessageFilterExt::filter_reply_to_message`]. It is a newtype so that it
+/// does not override the original [`Message`] in the dependency map, so
+/// handlers can accept both.
+///
+/// [`MessageFilterExt::filter_reply_to_message`]: crate::dispatching::MessageFilterExt::filter_reply_to_message
+#[derive(Debug, Clone)]
+pub struct ReplyToMessage(pub Message);
+
 macro_rules! define_ext {
     ($ext_name:ident, $for_ty:ty => $( ($func:ident, $proj_fn:expr, $fn_doc:expr $(, $Allowed:ident)? ) ,)*) => {
         #[doc = concat!("Filter methods for [`", stringify!($for_ty), "`].")]
@@ -58,12 +69,12 @@ mod private {
 // FIXME: rewrite this macro to allow the usage of functions returning small
 // values without borrowing
 macro_rules! define_message_ext {
-    ($( ($func:ident, $fn_name:path) ,)*) => {
+    ($( ($func:ident, $fn_name:path $(, $wrap:path)?) ,)*) => {
         define_ext! {
             MessageFilterExt, Message =>
             $((
                 $func,
-                (|x| $fn_name(&x).map(ToOwned::to_owned)),
+                (|x| $fn_name(&x).map(ToOwned::to_owned) $(.map($wrap))?),
                 concat!("Applies the [`", stringify!($fn_name), "`] filter.")
             ),)*
         }
@@ -96,7 +107,7 @@ define_message_ext! {
     (filter_migration, Message::chat_migration),
     (filter_migration_from, Message::migrate_from_chat_id),
     (filter_migration_to, Message::migrate_to_chat_id),
-    (filter_reply_to_message, Message::reply_to_message),
+    (filter_reply_to_message, Message::reply_to_message, ReplyToMessage),
     (filter_forward_origin, Message::forward_origin),
     (filter_reply_to_story, Message::reply_to_story),
     // Rest variants of a MessageKind
@@ -194,4 +205,49 @@ define_update_ext! {
     (filter_removed_chat_boost, UpdateKind::RemovedChatBoost, RemovedChatBoost),
     (filter_managed_bot_updated, UpdateKind::ManagedBot, ManagedBot),
     (filter_stopped_message_generation, UpdateKind::StoppedMessageGeneration, StoppedMessageGeneration),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use dptree::deps;
+    use std::ops::ControlFlow;
+
+    fn message(json: &str) -> Message {
+        serde_json::from_str(json).unwrap()
+    }
+
+    #[tokio::test]
+    async fn reply_to_message_does_not_override_message() {
+        let msg = message(
+            r#"{"message_id":2,"date":1675229140,"chat":{"id":1,"type":"private"},
+                "text":"reply",
+                "reply_to_message":{"message_id":1,"date":1675229139,"chat":{"id":1,"type":"private"},"text":"original"}}"#,
+        );
+
+        let handler: Handler<'static, (i32, i32), DpHandlerDescription> =
+            Message::filter_reply_to_message().endpoint(
+                |msg: Message, reply: ReplyToMessage| async move { (msg.id.0, reply.0.id.0) },
+            );
+
+        match handler.dispatch(deps![msg]).await {
+            ControlFlow::Break((msg_id, reply_id)) => {
+                assert_eq!(msg_id, 2);
+                assert_eq!(reply_id, 1);
+            }
+            ControlFlow::Continue(_) => panic!("handler should have matched"),
+        }
+    }
+
+    #[tokio::test]
+    async fn reply_to_message_filters_non_replies() {
+        let msg = message(
+            r#"{"message_id":2,"date":1675229140,"chat":{"id":1,"type":"private"},"text":"x"}"#,
+        );
+
+        let handler: Handler<'static, (), DpHandlerDescription> =
+            Message::filter_reply_to_message().endpoint(|_: ReplyToMessage| async {});
+
+        assert!(matches!(handler.dispatch(deps![msg]).await, ControlFlow::Continue(_)));
+    }
 }
