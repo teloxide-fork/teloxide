@@ -100,6 +100,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- MSRV (Minimal Supported Rust Version) was bumped from `1.85` to `1.88` [**BC**]
+- `takecell` is now pinned to `=0.1.1` so that downstream users don't resolve a newer version with a higher MSRV ([#1478](https://github.com/teloxide/teloxide/issues/1478))
 - `Throttle` now also throttles `create_forum_topic`, `edit_forum_topic`, `delete_forum_topic`, `pin_chat_message`, `edit_message_text`, `edit_message_caption`, `edit_message_media`, `delete_message` and `delete_messages` (these now return `ThrottlingRequest`s and require `Clone + Send + Sync + 'static` payload bounds on the inner requester) [**BC**]
 - `send_message_draft` is no longer restricted to privileged bots (TBA 9.5)
 - Support for TBA 9.2 ([#1403](https://github.com/teloxide/teloxide/pull/1403))
