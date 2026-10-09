@@ -106,6 +106,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed 
 
+- `ApiError::CantInitiateConversation` is now parsed from the `Forbidden: bot can't initiate conversation with a user` error Telegram currently returns instead of `Unauthorized: ...` ([#1392](https://github.com/teloxide/teloxide/pull/1392))
+
 - Add local TBA file downloading support in `crate::net::download` ([#1173](https://github.com/teloxide/teloxide/pull/1173))
 
 - Added schema and rust types checking ([#1396](https://github.com/teloxide/teloxide/pull/1396))
