@@ -28,8 +28,10 @@ pub struct ExternalReplyInfo {
     #[serde(default)]
     pub has_media_spoiler: bool,
 
+    /// Media (or other content) of the original message. `None` if the
+    /// original message has no media, e.g. it is a plain text message.
     #[serde(flatten)]
-    pub kind: ExternalReplyInfoKind,
+    pub kind: Option<ExternalReplyInfoKind>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -93,6 +95,56 @@ mod tests {
         )
         .unwrap();
 
-        assert!(matches!(reply.kind, ExternalReplyInfoKind::LivePhoto(_)));
+        assert!(matches!(reply.kind, Some(ExternalReplyInfoKind::LivePhoto(_))));
+    }
+
+    const CHANNEL_ORIGIN: &str = r#""origin":{
+        "type":"channel",
+        "chat":{"id":-1001234567890,"title":"Chan","type":"channel"},
+        "message_id":5,
+        "date":1721162577
+    },
+    "chat":{"id":-1001234567890,"title":"Chan","type":"channel"},
+    "message_id":5"#;
+
+    #[test]
+    fn deserialize_without_media() {
+        let json = format!("{{{CHANNEL_ORIGIN}}}");
+        let reply: ExternalReplyInfo = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(reply.kind, None);
+        assert_eq!(reply.message_id, Some(MessageId(5)));
+        assert!(reply.chat.is_some());
+        assert!(matches!(reply.origin, MessageOrigin::Channel { .. }));
+    }
+
+    #[test]
+    fn deserialize_with_photo() {
+        let json = format!(
+            r#"{{{CHANNEL_ORIGIN},"photo":[{{"file_id":"a","file_unique_id":"b","width":1,"height":1,"file_size":1}}]}}"#
+        );
+        let reply: ExternalReplyInfo = serde_json::from_str(&json).unwrap();
+
+        assert!(matches!(reply.kind, Some(ExternalReplyInfoKind::Photo(ref p)) if p.len() == 1));
+    }
+
+    #[test]
+    fn serialize_round_trip() {
+        let json = format!("{{{CHANNEL_ORIGIN}}}");
+        let reply: ExternalReplyInfo = serde_json::from_str(&json).unwrap();
+
+        let value = serde_json::to_value(&reply).unwrap();
+        let obj = value.as_object().unwrap();
+        assert!(!obj.contains_key("photo"));
+        assert!(!obj.contains_key("kind"));
+        assert_eq!(serde_json::from_value::<ExternalReplyInfo>(value).unwrap(), reply);
+
+        let json = format!(
+            r#"{{{CHANNEL_ORIGIN},"photo":[{{"file_id":"a","file_unique_id":"b","width":1,"height":1,"file_size":1}}]}}"#
+        );
+        let reply: ExternalReplyInfo = serde_json::from_str(&json).unwrap();
+        let value = serde_json::to_value(&reply).unwrap();
+        assert!(value.get("photo").is_some());
+        assert_eq!(serde_json::from_value::<ExternalReplyInfo>(value).unwrap(), reply);
     }
 }
