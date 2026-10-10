@@ -25,7 +25,7 @@
 </div>
 
 ```toml
-teloxide-core = { package = "teloxide-fork-core", version = "0.13.0" }
+teloxide-core = { package = "teloxide-fork-core", version = "0.14.0" }
 ```
 _Compiler support: requires rustc 1.88+_.
 

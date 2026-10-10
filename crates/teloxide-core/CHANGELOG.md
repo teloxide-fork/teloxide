@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+## 0.14.0 - 2026-10-10
+
 ### Added
 
 - Support for TBA 10.3
