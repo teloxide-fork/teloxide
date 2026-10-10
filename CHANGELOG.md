@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+## 0.18.0 - 2026-10-10
+
 ### Changed
 
 - `MessageFilterExt::filter_reply_to_message` now inserts `teloxide::dispatching::ReplyToMessage` into the dependency map instead of a bare `Message`, so it no longer overrides the original `Message` ([#751](https://github.com/teloxide/teloxide/issues/751)) [**BC**]

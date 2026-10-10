@@ -75,7 +75,7 @@ $ rustup override set nightly
  5. Run `cargo new my_bot`, enter the directory and put these lines into your `Cargo.toml`:
 ```toml
 [dependencies]
-teloxide = { package = "teloxide-fork", version = "0.17.0", features = ["macros"] }
+teloxide = { package = "teloxide-fork", version = "0.18.0", features = ["macros"] }
 log = "0.4"
 pretty_env_logger = "0.5"
 tokio = { version =  "1.39", features = ["rt-multi-thread", "macros"] }
