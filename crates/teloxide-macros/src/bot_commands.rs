@@ -106,6 +106,9 @@ fn impl_parse(
     let aliases = infos.iter().map(|c| c.get_prefixed_aliases().unwrap_or_default());
 
     quote! {
+         // `FromStr::Err` may be uninhabited (e.g. `Infallible` for `String`), in which
+         // case the generated error conversion is unreachable.
+         #[allow(unreachable_code)]
          fn parse(s: &str, bot_name: &str) -> ::std::result::Result<Self, teloxide::utils::command::ParseError> {
               // FIXME: we should probably just call a helper function from `teloxide`, instead of parsing command syntax ourselves
               use std::str::FromStr;
