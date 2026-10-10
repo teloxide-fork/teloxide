@@ -1,14 +1,16 @@
+> **Note:** this is a maintained fork of [`teloxide/teloxide`](https://github.com/teloxide/teloxide), published on crates.io as [`teloxide-fork`](https://crates.io/crates/teloxide-fork) (together with `teloxide-fork-core` and `teloxide-fork-macros`). The library names are unchanged, so you still write `use teloxide::...`; just add `package = "teloxide-fork"` to the dependency (see [below](#setting-up-your-environment)).
+
 <div align="center">
-  <img src="https://github.com/teloxide/teloxide/blob/master/media/teloxide-logo.png?raw=true" width="250"/>
+  <img src="https://github.com/teloxide-fork/teloxide/blob/master/media/teloxide-logo.png?raw=true" width="250"/>
   <h1><code>teloxide</code></h1>
-  <a href="https://docs.rs/teloxide/">
-    <img src="https://docs.rs/teloxide/badge.svg">
+  <a href="https://docs.rs/teloxide-fork/">
+    <img src="https://docs.rs/teloxide-fork/badge.svg">
   </a>
-  <a href="https://github.com/teloxide/teloxide/actions">
-    <img src="https://github.com/teloxide/teloxide/workflows/Continuous%20integration/badge.svg">
+  <a href="https://github.com/teloxide-fork/teloxide/actions">
+    <img src="https://github.com/teloxide-fork/teloxide/workflows/Continuous%20integration/badge.svg">
   </a>
-  <a href="https://crates.io/crates/teloxide">
-    <img src="https://img.shields.io/crates/v/teloxide.svg">
+  <a href="https://crates.io/crates/teloxide-fork">
+    <img src="https://img.shields.io/crates/v/teloxide-fork.svg">
   </a>
   <a href="https://core.telegram.org/bots/api">
     <img src="https://img.shields.io/badge/API%20coverage-Up%20to%2010.3%20(inclusively)-green.svg">
@@ -16,7 +18,7 @@
   <a href="https://t.me/teloxide">
     <img src="https://img.shields.io/badge/support-t.me%2Fteloxide-blueviolet">
   </a>
-  <a href="https://devpod.sh/open#https://github.com/teloxide/teloxide">
+  <a href="https://devpod.sh/open#https://github.com/teloxide-fork/teloxide">
     <img src="https://img.shields.io/badge/Open_in-DevPod-blueviolet">
   </a>
 
@@ -73,7 +75,7 @@ $ rustup override set nightly
  5. Run `cargo new my_bot`, enter the directory and put these lines into your `Cargo.toml`:
 ```toml
 [dependencies]
-teloxide = { version = "0.17.0", features = ["macros"] }
+teloxide = { package = "teloxide-fork", version = "0.17.0", features = ["macros"] }
 log = "0.4"
 pretty_env_logger = "0.5"
 tokio = { version =  "1.39", features = ["rt-multi-thread", "macros"] }
@@ -82,7 +84,7 @@ tokio = { version =  "1.39", features = ["rt-multi-thread", "macros"] }
 _Note: if there is functionality in master that is not released yet, you can pull the Git repository as follows:_
 
 ```toml
-teloxide = { git = "https://github.com/teloxide/teloxide.git", features = ["macros"] }
+teloxide = { package = "teloxide-fork", git = "https://github.com/teloxide-fork/teloxide.git", features = ["macros"] }
 ```
 
 ## API overview
@@ -112,7 +114,7 @@ async fn main() {
 ```
 
 <div align="center">
-    <img src="https://github.com/teloxide/teloxide/blob/master/media/throw-dice.gif?raw=true" width="420" />
+    <img src="https://github.com/teloxide-fork/teloxide/blob/master/media/throw-dice.gif?raw=true" width="420" />
 </div>
 
 ### Commands
@@ -169,7 +171,7 @@ async fn answer(bot: Bot, msg: Message, cmd: Command) -> ResponseResult<()> {
 ```
 
 <div align="center">
-    <img src="https://github.com/teloxide/teloxide/blob/master/media/command.gif?raw=true" width="420" />
+    <img src="https://github.com/teloxide-fork/teloxide/blob/master/media/command.gif?raw=true" width="420" />
 </div>
 
 ### Dialogues management
@@ -288,7 +290,7 @@ async fn receive_location(
 ```
 
 <div align="center">
-    <img src="https://github.com/teloxide/teloxide/blob/master/media/dialogue.gif?raw=true" width="420" />
+    <img src="https://github.com/teloxide-fork/teloxide/blob/master/media/dialogue.gif?raw=true" width="420" />
 </div>
 
 [More examples >>](crates/teloxide/examples/)
@@ -301,7 +303,7 @@ The community has made a crate called [`teloxide_tests`](https://github.com/Last
 
 ## Tutorials
 
- - [_`dptree` starter guide with teloxide_](https://github.com/teloxide/teloxide/blob/master/DPTREE_GUIDE.md)
+ - [_`dptree` starter guide with teloxide_](https://github.com/teloxide-fork/teloxide/blob/master/DPTREE_GUIDE.md)
  - [_"Migrating my family finance bot from Python to Rust (teloxide) because I am tired of exceptions (part 1)"_](https://web.archive.org/web/20230130112018/https://trkohler.com/posts/i-migrated-my-family-finance-bot-from-python-to-rust-because-i-am-tired-of-exceptions/) by Troy Köhler.
  - [_"Migrating my family finance bot from Python to Rust (teloxide) [part 2]"_](https://web.archive.org/web/20240529200929/https://trkohler.com/posts/migrating-my-family-finance-bot-from-python-to-rust-teloxide-part-2/) by Troy Köhler.
 
@@ -315,9 +317,9 @@ A:
  - [GitHub Discussions] is a place where you can ask us for help in a less formal manner.
  - If you need quick help in real-time, you should ask a question in [our official Telegram group].
 
-[Issues]: https://github.com/teloxide/teloxide/issues
+[Issues]: https://github.com/teloxide-fork/teloxide/issues
 [our official Telegram group]: https://t.me/teloxide
-[GitHub Discussions]: https://github.com/teloxide/teloxide/discussions
+[GitHub Discussions]: https://github.com/teloxide-fork/teloxide/discussions
 
 **Q: Do you support the Telegram API for clients?**
 
@@ -364,7 +366,7 @@ Feel free to propose your own bot to our collection!
  - [`fr0staman/fr0staman_bot`](https://github.com/fr0staman/fr0staman_bot) — Feature rich Telegram game-like bot with pigs 🐽.
  - [`franciscofigueira/transferBot`](https://github.com/franciscofigueira/transferBot) — Telegram bot that notifies of crypto token transfers.
 
-See [2500+ other public repositories using `teloxide` >>](https://github.com/teloxide/teloxide/network/dependents)
+See [2500+ other public repositories using `teloxide` >>](https://github.com/teloxide-fork/teloxide/network/dependents)
 
 ## Contributing
 

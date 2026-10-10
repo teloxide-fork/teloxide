@@ -2,11 +2,11 @@
   <img src="../../media/teloxide-core-logo.svg" width="250"/>
 
   <h1>teloxide-core</h1>
-  <a href="https://github.com/teloxide/teloxide-core/actions">
-    <img src="https://github.com/teloxide/teloxide-core/workflows/Continuous%20integration/badge.svg">
+  <a href="https://github.com/teloxide-fork/teloxide/actions">
+    <img src="https://github.com/teloxide-fork/teloxide/workflows/Continuous%20integration/badge.svg">
   </a>
-  <a href="https://docs.rs/teloxide_core/">
-    <img src="https://docs.rs/teloxide-core/badge.svg">
+  <a href="https://docs.rs/teloxide-fork-core/">
+    <img src="https://docs.rs/teloxide-fork-core/badge.svg">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg">
@@ -14,8 +14,8 @@
   <a href="https://core.telegram.org/bots/api">
     <img src="https://img.shields.io/badge/API%20coverage-Up%20to%2010.3%20(inclusively)-green.svg">
   </a>
-  <a href="https://crates.io/crates/teloxide_core">
-    <img src="https://img.shields.io/crates/v/teloxide_core.svg">
+  <a href="https://crates.io/crates/teloxide-fork-core">
+    <img src="https://img.shields.io/crates/v/teloxide-fork-core.svg">
   </a>
   <a href="https://t.me/teloxide">
     <img src="https://img.shields.io/badge/official%20chat-t.me%2Fteloxide-blueviolet">
@@ -25,10 +25,10 @@
 </div>
 
 ```toml
-teloxide-core = "0.13.0"
+teloxide-core = { package = "teloxide-fork-core", version = "0.13.0" }
 ```
 _Compiler support: requires rustc 1.88+_.
 
-[`teloxide`]: https://docs.rs/teloxide
+[`teloxide`]: https://docs.rs/teloxide-fork
 [Telegram Bot API]: https://core.telegram.org/bots/api
 [`tokio`]: https://tokio.rs

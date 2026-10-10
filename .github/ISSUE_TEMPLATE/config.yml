@@ -1,4 +1,4 @@
 contact_links:
-  - name: Teloxide Discussions
-    url: https://github.com/teloxide/teloxide/discussions/categories/q-a
-    about: Please ask and answer questions here.
+  - name: Teloxide Fork Issues
+    url: https://github.com/teloxide-fork/teloxide/issues
+    about: Please ask questions here.

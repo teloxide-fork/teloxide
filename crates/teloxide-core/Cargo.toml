@@ -1,5 +1,5 @@
 [package]
-name = "teloxide-core"
+name = "teloxide-fork-core"
 version = "0.13.0"
 description = "Core part of the `teloxide` library - telegram bot API client"
 
@@ -9,12 +9,15 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-documentation = "https://docs.rs/teloxide-core/"
+documentation = "https://docs.rs/teloxide-fork-core/"
 readme = "README.md"
 
 keywords = ["teloxide", "telegram", "telegram-bot", "telegram-bot-api", "bot"]
 categories = ["api-bindings", "asynchronous"]
 
+
+[lib]
+name = "teloxide_core"
 
 [features]
 # NB: When adding features here, don't forget to update teloxide's Cargo.toml
@@ -113,8 +116,8 @@ cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 tag-prefix = "core-"
 enable-features = ["full"]
 pre-release-replacements = [
-    { file = "README.md", search = "teloxide-core = \"[^\"]+\"", replace = "teloxide-core = \"{{version}}\"" },
-    { file = "src/lib.rs", search = "teloxide-core = \"[^\"]+\"", replace = "teloxide-core = \"{{version}}\"" },
+    { file = "README.md", search = "package = \"teloxide-fork-core\", version = \"[^\"]+\"", replace = "package = \"teloxide-fork-core\", version = \"{{version}}\"" },
+    { file = "src/lib.rs", search = "package = \"teloxide-fork-core\", version = \"[^\"]+\"", replace = "package = \"teloxide-fork-core\", version = \"{{version}}\"" },
     { file = "CHANGELOG.md", search = "## unreleased", replace = "## unreleased\n\n## {{version}} - {{date}}", exactly = 1 },
 ]
 

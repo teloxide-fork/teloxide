@@ -5,7 +5,7 @@
 //! asynchronous and built using [`tokio`].
 //!
 //!```toml
-//! teloxide-core = "0.13.0"
+//! teloxide-core = { package = "teloxide-fork-core", version = "0.13.0" }
 //! ```
 //! _Compiler support: requires rustc 1.88+_.
 //!
@@ -30,7 +30,7 @@
 //!     <img src=https://user-images.githubusercontent.com/38225716/103929465-6b91e100-512e-11eb-826d-39b096f16548.gif />
 //! </div>
 //!
-//! [`teloxide`]: https://docs.rs/teloxide
+//! [`teloxide`]: https://docs.rs/teloxide-fork
 //! [Telegram Bot API]: https://core.telegram.org/bots/api
 //! [`tokio`]: https://tokio.rs
 //!

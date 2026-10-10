@@ -9,10 +9,10 @@
 
 ## Reporting bugs, questions, feature requests and adding new features
 
-To report a bug or suggest new functionality, go to the [issues](https://github.com/teloxide/teloxide/issues). Try to make MRE (**M**inimal **R**eproducible **E**xample) and specify your `teloxide` version to let others help you.
+To report a bug or suggest new functionality, go to the [issues](https://github.com/teloxide-fork/teloxide/issues). Try to make MRE (**M**inimal **R**eproducible **E**xample) and specify your `teloxide` version to let others help you.
 
 If you want to ask a question, you can either
-- open a new [GitHub discussion](https://github.com/teloxide/teloxide/discussions), or
+- open a new [GitHub discussion](https://github.com/teloxide-fork/teloxide/discussions), or
 - write to our Telegram group ([ENG](https://t.me/teloxide), [RU](https://t.me/teloxide_ru)).
 
 If you want to contribute a new feature or a TBA update, you should contact other developers in the [teloxide_dev](https://t.me/teloxide_dev) chat, or in the github issues. What you want to do may already be in the works, or we may not want to support your feature in the future. 
@@ -45,7 +45,7 @@ In general, try to make PR title/description as clear as possible, as they are t
 
 If your PR introduces breaking changes, mark them with `[**BC**]` in the changelog and update [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md).
 
-[GitHub issue]: https://github.com/teloxide/teloxide/issues
+[GitHub issue]: https://github.com/teloxide-fork/teloxide/issues
 [using keywords in issues and pull requests]: https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests
 
 ### Merge conflicts
@@ -90,7 +90,7 @@ devpod up .
 Option 2:
 
 ```shell
-devpod up https://github.com/teloxide/teloxide
+devpod up https://github.com/teloxide-fork/teloxide
 ```
 
 ### Testing

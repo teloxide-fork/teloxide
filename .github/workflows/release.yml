@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package to release
+        type: choice
+        required: true
+        default: all
+        options:
+          - all
+          - teloxide-fork-core
+          - teloxide-fork-macros
+          - teloxide-fork
+      level:
+        description: Version bump level
+        type: choice
+        required: true
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+concurrency: release
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    env:
+      # Override rust-toolchain.toml (nightly-2025-06-12, cargo 1.89): multi-package
+      # `cargo publish` (publishing in dependency order and waiting for the index)
+      # needs cargo >= 1.90.
+      RUSTUP_TOOLCHAIN: stable
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-release
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Release
+        env:
+          PACKAGE: ${{ inputs.package }}
+          LEVEL: ${{ inputs.level }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          if [ "$PACKAGE" = "all" ]; then
+            args="-p teloxide-fork-core -p teloxide-fork-macros -p teloxide-fork"
+          else
+            args="-p $PACKAGE"
+          fi
+          # shellcheck disable=SC2086
+          cargo release $args "$LEVEL" --execute --no-confirm
+
+      - name: Create GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for tag in $(git tag --points-at HEAD); do
+            case "$tag" in
+              core-v*)   changelog=crates/teloxide-core/CHANGELOG.md;   version="${tag#core-v}" ;;
+              macros-v*) changelog=crates/teloxide-macros/CHANGELOG.md; version="${tag#macros-v}" ;;
+              v*)        changelog=CHANGELOG.md;                        version="${tag#v}" ;;
+              *) echo "Skipping unknown tag $tag"; continue ;;
+            esac
+
+            awk -v ver="$version" '
+              /^## / {
+                if (found) exit
+                if ($2 == ver) { found = 1; next }
+              }
+              found { print }
+            ' "$changelog" > notes.md
+
+            if [ ! -s notes.md ]; then
+              echo "No changelog section for $version in $changelog" >&2
+              echo "Release $tag" > notes.md
+            fi
+
+            gh release create "$tag" --title "$tag" --notes-file notes.md
+          done

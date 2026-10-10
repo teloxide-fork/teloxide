@@ -1,5 +1,5 @@
 [package]
-name = "teloxide"
+name = "teloxide-fork"
 version = "0.17.0"
 description = "An elegant Telegram bots framework for Rust"
 
@@ -10,12 +10,15 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-documentation = "https://docs.rs/teloxide/"
+documentation = "https://docs.rs/teloxide-fork/"
 readme = "../../README.md"
 
 keywords = ["teloxide", "telegram", "telegram-bot", "telegram-bot-api", "bot"]
 categories = ["web-programming", "api-bindings", "asynchronous"]
 
+
+[lib]
+name = "teloxide"
 
 [features]
 default = ["native-tls", "ctrlc_handler", "teloxide-core/default"]
@@ -84,9 +87,10 @@ full = [
 
 
 [dependencies]
-# replace me by the actual version when release, and return path when it's time to make 0-day fixes
-teloxide-core = { path = "../teloxide-core", default-features = false }
-teloxide-macros = { path = "../teloxide-macros", optional = true }
+# `version` is bumped by cargo-release (dependent-version); `path` is stripped on publish.
+# The keys keep the old names so that the lib names and feature names stay `teloxide-core`/`teloxide-macros`.
+teloxide-core = { package = "teloxide-fork-core", path = "../teloxide-core", version = "0.13.0", default-features = false }
+teloxide-macros = { package = "teloxide-fork-macros", path = "../teloxide-macros", version = "0.10.0", optional = true }
 
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
@@ -150,7 +154,7 @@ cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 tag-prefix = ""
 enable-features = ["full"]
 pre-release-replacements = [
-    { file = "../../README.md", search = "teloxide = \\{ version = \"[^\"]+\"", replace = "teloxide = { version = \"{{version}}\"" },
+    { file = "../../README.md", search = "package = \"teloxide-fork\", version = \"[^\"]+\"", replace = "package = \"teloxide-fork\", version = \"{{version}}\"" },
     { file = "../../CHANGELOG.md", search = "## unreleased", replace = "## unreleased\n\n## {{version}} - {{date}}", exactly = 1 },
 ]
 
