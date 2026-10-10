@@ -2746,7 +2746,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20f34339676cdcab560c9a82300c4c2581f68b9369aedf0fae86f2ff9565ff3e"
 
 [[package]]
-name = "teloxide"
+name = "teloxide-fork"
 version = "0.17.0"
 dependencies = [
  "axum",
@@ -2768,8 +2768,8 @@ dependencies = [
  "serde_cbor",
  "serde_json",
  "sqlx",
- "teloxide-core",
- "teloxide-macros",
+ "teloxide-fork-core",
+ "teloxide-fork-macros",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -2781,7 +2781,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "teloxide-core"
+name = "teloxide-fork-core"
 version = "0.13.0"
 dependencies = [
  "aho-corasick",
@@ -2821,7 +2821,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "teloxide-macros"
+name = "teloxide-fork-macros"
 version = "0.10.0"
 dependencies = [
  "heck",

@@ -1,5 +1,5 @@
 [package]
-name = "teloxide-macros"
+name = "teloxide-fork-macros"
 version = "0.10.0"
 description = "The teloxide's procedural macros"
 
@@ -9,11 +9,12 @@ license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-documentation = "https://docs.rs/teloxide-core/"
+documentation = "https://docs.rs/teloxide-fork-macros/"
 # FIXME: add a simple readme for teloxide-macros
 #readme = "README.md"
 
 [lib]
+name = "teloxide_macros"
 proc-macro = true
 
 [dependencies]

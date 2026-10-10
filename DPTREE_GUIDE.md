@@ -206,7 +206,7 @@ let handler = dptree::map(map_enum_variant3).branch(
 
 This is particularly useful with [dialogue feature] and states.
 
-[dialogue feature]: https://github.com/teloxide/teloxide?tab=readme-ov-file#dialogues-management
+[dialogue feature]: https://github.com/teloxide-fork/teloxide?tab=readme-ov-file#dialogues-management
 
 ## Type checking and dead code detection
 
