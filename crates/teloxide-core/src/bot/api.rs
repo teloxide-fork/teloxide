@@ -7,10 +7,10 @@ use crate::{
     types::{
         AcceptedGiftTypes, BotCommand, BusinessConnectionId, CallbackQueryId, ChatId,
         ChatJoinRequestQueryResult, ChatPermissions, CustomEmojiId, FileId, GiftId, InlineQueryId,
-        InlineQueryResult, InputChecklist, InputFile, InputMedia, InputPaidMedia, InputPollOption,
-        InputProfilePhoto, InputRichMessage, InputSticker, InputStoryContent, KeyboardButton,
-        LabeledPrice, MessageId, OwnedGiftId, PreCheckoutQueryId, Recipient, Seconds,
-        ShippingQueryId, StickerFormat, StoryId, TelegramTransactionId, ThreadId, UserId,
+        InlineQueryResult, InputChecklist, InputFile, InputGroupMedia, InputMedia, InputPaidMedia,
+        InputPollOption, InputProfilePhoto, InputRichMessage, InputSticker, InputStoryContent,
+        KeyboardButton, LabeledPrice, MessageId, OwnedGiftId, PreCheckoutQueryId, Recipient,
+        Seconds, ShippingQueryId, StickerFormat, StoryId, TelegramTransactionId, ThreadId, UserId,
     },
     Bot,
 };
@@ -237,7 +237,7 @@ impl Requester for Bot {
     fn send_media_group<C, M>(&self, chat_id: C, media: M) -> Self::SendMediaGroup
     where
         C: Into<Recipient>,
-        M: IntoIterator<Item = InputMedia>,
+        M: IntoIterator<Item = InputGroupMedia>,
     {
         Self::SendMediaGroup::new(self.clone(), payloads::SendMediaGroup::new(chat_id, media))
     }

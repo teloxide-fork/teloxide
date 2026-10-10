@@ -618,7 +618,7 @@ macro_rules! requester_forward {
         type SendMediaGroup = $ty![SendMediaGroup];
 
         fn send_media_group<C, M>(&self, chat_id: C, media: M) -> Self::SendMediaGroup where C: Into<Recipient>,
-        M: IntoIterator<Item = InputMedia> {
+        M: IntoIterator<Item = InputGroupMedia> {
             let this = self;
             $body!(send_media_group this (chat_id: C, media: M))
         }

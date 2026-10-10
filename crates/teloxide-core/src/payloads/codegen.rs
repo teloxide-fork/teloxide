@@ -189,7 +189,10 @@ fn partial_eq_suitable(method: &Method) -> bool {
         match ty {
             Type::Option(inner) | Type::ArrayOf(inner) => ty_partial_eq_suitable(&*inner),
             Type::RawTy(raw) => {
-                raw != "InputMedia" && raw != "InputPollMedia" && raw != "InputRichMessage"
+                raw != "InputMedia"
+                    && raw != "InputGroupMedia"
+                    && raw != "InputPollMedia"
+                    && raw != "InputRichMessage"
             }
             _ => true,
         }
@@ -218,6 +221,7 @@ fn eq_hash_suitable(method: &Method) -> bool {
 
             Type::RawTy(raw) => {
                 raw != "InputMedia"
+                    && raw != "InputGroupMedia"
                     && raw != "InputPollMedia"
                     && raw != "InputRichMessage"
                     && raw != "InputSticker"

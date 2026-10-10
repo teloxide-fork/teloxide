@@ -88,9 +88,9 @@ mod tests {
     use crate::{
         payloads::{self, setters::*},
         types::{
-            ChatId, InputFile, InputMedia, InputMediaAnimation, InputMediaAudio,
-            InputMediaDocument, InputMediaPhoto, InputMediaVideo, InputSticker, MessageEntity,
-            MessageEntityKind, ParseMode, StickerFormat, UserId,
+            ChatId, InputFile, InputGroupMedia, InputMediaAudio, InputMediaDocument,
+            InputMediaPhoto, InputMediaVideo, InputSticker, MessageEntity, MessageEntityKind,
+            ParseMode, StickerFormat, UserId,
         },
     };
 
@@ -113,17 +113,17 @@ mod tests {
         to_form_ref(&payloads::SendMediaGroup::new(
             ChatId(0),
             [
-                InputMedia::Photo(
+                InputGroupMedia::from(
                     InputMediaPhoto::new(InputFile::file("../../media/teloxide-core-logo.png"))
                         .caption(CAPTION)
                         .parse_mode(ParseMode::MarkdownV2)
                         .caption_entities(entities()),
                 ),
-                InputMedia::Video(
+                InputGroupMedia::from(
                     InputMediaVideo::new(InputFile::file_id("17".into())).supports_streaming(true),
                 ),
-                InputMedia::Animation(
-                    InputMediaAnimation::new(InputFile::read(
+                InputGroupMedia::from(
+                    InputMediaVideo::new(InputFile::read(
                         File::open("../../media/example.gif").await.unwrap(),
                     ))
                     .thumbnail(InputFile::read(
@@ -131,11 +131,11 @@ mod tests {
                     ))
                     .duration(17),
                 ),
-                InputMedia::Audio(
+                InputGroupMedia::from(
                     InputMediaAudio::new(InputFile::url("https://example.com".parse().unwrap()))
                         .performer("a"),
                 ),
-                InputMedia::Document(InputMediaDocument::new(InputFile::memory(
+                InputGroupMedia::from(InputMediaDocument::new(InputFile::memory(
                     &b"Hello world!"[..],
                 ))),
             ],

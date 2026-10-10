@@ -518,7 +518,7 @@ trait ErasableRequester<'a> {
     fn send_media_group(
         &self,
         chat_id: Recipient,
-        media: Vec<InputMedia>,
+        media: Vec<InputGroupMedia>,
     ) -> ErasedRequest<'a, SendMediaGroup, Self::Err>;
 
     fn send_location(
@@ -1627,7 +1627,7 @@ where
     fn send_media_group(
         &self,
         chat_id: Recipient,
-        media: Vec<InputMedia>,
+        media: Vec<InputGroupMedia>,
     ) -> ErasedRequest<'a, SendMediaGroup, Self::Err> {
         Requester::send_media_group(self, chat_id, media).erase()
     }
