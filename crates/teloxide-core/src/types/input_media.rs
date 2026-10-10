@@ -40,6 +40,130 @@ pub enum InputRichMedia {
     VoiceNote(InputMediaVoiceNote),
 }
 
+/// Media that can be sent as a part of a media group (album) via
+/// [`SendMediaGroup`](crate::payloads::SendMediaGroup).
+///
+/// Unlike [`InputMedia`], this union intentionally excludes animations and
+/// voice notes because the Bot API does not allow them in media groups.
+///
+/// Use `InputGroupMedia::from(..)`/`.into()` on a concrete `InputMedia*` type,
+/// or `TryFrom<InputMedia>` for converting from an [`InputMedia`].
+#[derive(Clone, Debug, Serialize)]
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+#[cfg_attr(test, schemars(inline))]
+#[cfg_attr(test, schemars(!tag, untagged))]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum InputGroupMedia {
+    Audio(InputMediaAudio),
+    Document(InputMediaDocument),
+    LivePhoto(InputMediaLivePhoto),
+    Photo(InputMediaPhoto),
+    Video(InputMediaVideo),
+}
+
+/// Error returned when an [`InputMedia`] can't be used in a media group.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UnsupportedGroupMedia {
+    /// The `type` of the unsupported media.
+    pub kind: &'static str,
+}
+
+impl std::fmt::Display for UnsupportedGroupMedia {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "`{}` media can't be sent in a media group", self.kind)
+    }
+}
+
+impl std::error::Error for UnsupportedGroupMedia {}
+
+macro_rules! group_media_from {
+    ($($variant:ident($ty:ident)),* $(,)?) => {$(
+        impl From<$ty> for InputGroupMedia {
+            fn from(media: $ty) -> Self {
+                Self::$variant(media)
+            }
+        }
+    )*};
+}
+
+group_media_from! {
+    Audio(InputMediaAudio),
+    Document(InputMediaDocument),
+    LivePhoto(InputMediaLivePhoto),
+    Photo(InputMediaPhoto),
+    Video(InputMediaVideo),
+}
+
+impl TryFrom<InputMedia> for InputGroupMedia {
+    type Error = UnsupportedGroupMedia;
+
+    fn try_from(media: InputMedia) -> Result<Self, Self::Error> {
+        match media {
+            InputMedia::Audio(m) => Ok(Self::Audio(m)),
+            InputMedia::Document(m) => Ok(Self::Document(m)),
+            InputMedia::LivePhoto(m) => Ok(Self::LivePhoto(m)),
+            InputMedia::Photo(m) => Ok(Self::Photo(m)),
+            InputMedia::Video(m) => Ok(Self::Video(m)),
+            InputMedia::Animation(_) => Err(UnsupportedGroupMedia { kind: "animation" }),
+            InputMedia::VoiceNote(_) => Err(UnsupportedGroupMedia { kind: "voice_note" }),
+        }
+    }
+}
+
+impl From<InputGroupMedia> for InputMedia {
+    fn from(media: InputGroupMedia) -> Self {
+        match media {
+            InputGroupMedia::Audio(m) => Self::Audio(m),
+            InputGroupMedia::Document(m) => Self::Document(m),
+            InputGroupMedia::LivePhoto(m) => Self::LivePhoto(m),
+            InputGroupMedia::Photo(m) => Self::Photo(m),
+            InputGroupMedia::Video(m) => Self::Video(m),
+        }
+    }
+}
+
+impl InputGroupMedia {
+    /// Returns an iterator of all files in this input media
+    pub(crate) fn files(&self) -> impl Iterator<Item = &InputFile> {
+        use InputGroupMedia::*;
+
+        let (media, thumbnail) = match self {
+            Photo(InputMediaPhoto { media, .. }) => (media, None),
+            Document(InputMediaDocument { media, thumbnail, .. })
+            | Audio(InputMediaAudio { media, thumbnail, .. })
+            | Video(InputMediaVideo { media, thumbnail, .. }) => (media, thumbnail.as_ref()),
+            LivePhoto(InputMediaLivePhoto { media, photo, .. }) => (media, Some(photo)),
+        };
+
+        iter::once(media).chain(thumbnail)
+    }
+
+    /// Returns an iterator of all files in this input media
+    pub(crate) fn files_mut(&mut self) -> impl Iterator<Item = &mut InputFile> {
+        use InputGroupMedia::*;
+
+        let (media, thumbnail) = match self {
+            Photo(InputMediaPhoto { media, .. }) => (media, None),
+            Document(InputMediaDocument { media, thumbnail, .. })
+            | Audio(InputMediaAudio { media, thumbnail, .. })
+            | Video(InputMediaVideo { media, thumbnail, .. }) => (media, thumbnail.as_mut()),
+            LivePhoto(InputMediaLivePhoto { media, photo, .. }) => (media, Some(photo)),
+        };
+
+        iter::once(media).chain(thumbnail)
+    }
+}
+
+impl InputFileLike for InputGroupMedia {
+    fn copy_into(&self, into: &mut dyn FnMut(InputFile)) {
+        self.files().for_each(|file| file.copy_into(into));
+    }
+
+    fn move_into(&mut self, into: &mut dyn FnMut(InputFile)) {
+        self.files_mut().for_each(|file| file.move_into(into));
+    }
+}
+
 /// Represents a photo to be sent.
 ///
 /// [The official docs](https://core.telegram.org/bots/api#inputmediaphoto).
@@ -1138,5 +1262,52 @@ mod tests {
             medium.copy_into(&mut |_| files += 1);
         }
         assert_eq!(files, 6);
+    }
+
+    #[test]
+    fn group_media_serializes_its_tag() {
+        let cases: [(InputGroupMedia, &str); 5] = [
+            (InputMediaPhoto::new(InputFile::file_id("a".into())).into(), "photo"),
+            (InputMediaVideo::new(InputFile::file_id("a".into())).into(), "video"),
+            (InputMediaAudio::new(InputFile::file_id("a".into())).into(), "audio"),
+            (InputMediaDocument::new(InputFile::file_id("a".into())).into(), "document"),
+            (
+                InputMediaLivePhoto::new(
+                    InputFile::file_id("a".into()),
+                    InputFile::file_id("b".into()),
+                )
+                .into(),
+                "live_photo",
+            ),
+        ];
+        for (media, ty) in cases {
+            assert_eq!(serde_json::to_value(media).unwrap()["type"], ty);
+        }
+    }
+
+    #[test]
+    fn group_media_rejects_unsupported() {
+        let animation = InputMedia::Animation(InputMediaAnimation::new(InputFile::memory("a")));
+        assert_eq!(
+            InputGroupMedia::try_from(animation).unwrap_err(),
+            UnsupportedGroupMedia { kind: "animation" }
+        );
+        let voice = InputMedia::VoiceNote(InputMediaVoiceNote::new(InputFile::memory("a")));
+        assert!(InputGroupMedia::try_from(voice).is_err());
+
+        let photo = InputMedia::Photo(InputMediaPhoto::new(InputFile::memory("a")));
+        assert!(matches!(InputGroupMedia::try_from(photo), Ok(InputGroupMedia::Photo(_))));
+    }
+
+    #[test]
+    fn group_media_files_are_traversed() {
+        let mut media: InputGroupMedia =
+            InputMediaLivePhoto::new(InputFile::memory("v"), InputFile::memory("p")).into();
+        assert_eq!(media.files().count(), 2);
+        assert_eq!(media.files_mut().count(), 2);
+
+        let mut files = 0;
+        media.copy_into(&mut |_| files += 1);
+        assert_eq!(files, 2);
     }
 }

@@ -109,6 +109,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed 
 
+- `send_media_group` no longer accepts animations or voice notes at compile time: `SendMediaGroup::media` (and `Requester::send_media_group`) now take `InputGroupMedia` (audio, document, live photo, photo, video) instead of `InputMedia`; use `.into()` on a concrete `InputMedia*` type or `InputGroupMedia::try_from(InputMedia)` ([#1121](https://github.com/teloxide/teloxide/issues/1121)) [**BC**]
+
 - `ApiError::CantInitiateConversation` is now parsed from the `Forbidden: bot can't initiate conversation with a user` error Telegram currently returns instead of `Unauthorized: ...` ([#1392](https://github.com/teloxide/teloxide/pull/1392))
 
 - Fix deserialization of messages with an `external_reply` that has no media (the message was parsed as `MessageKind::Empty`) ([#1420](https://github.com/teloxide/teloxide/issues/1420))

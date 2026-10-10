@@ -349,7 +349,7 @@ pub trait Requester {
     fn send_media_group<C, M>(&self, chat_id: C, media: M) -> Self::SendMediaGroup
     where
         C: Into<Recipient>,
-        M: IntoIterator<Item = InputMedia>;
+        M: IntoIterator<Item = InputGroupMedia>;
 
     type SendLocation: Request<Payload = SendLocation, Err = Self::Err>;
 

@@ -485,7 +485,7 @@ impl VisitParseModes for SendMediaGroup {
     fn visit_parse_modes(&mut self, mut visitor: impl FnMut(&mut Option<ParseMode>)) {
         self.media
             .iter_mut()
-            .for_each(|media| visit_parse_modes_in_input_media(media, &mut visitor))
+            .for_each(|media| visit_parse_modes_in_input_group_media(media, &mut visitor))
     }
 }
 
@@ -566,6 +566,23 @@ fn visit_parse_modes_in_inline_query_result(
 
         // Can't contain `parse_mode` at all
         Game(_r) => return,
+    };
+
+    visitor(parse_mode);
+}
+
+fn visit_parse_modes_in_input_group_media(
+    media: &mut InputGroupMedia,
+    visitor: &mut impl FnMut(&mut Option<ParseMode>),
+) {
+    use InputGroupMedia::*;
+
+    let parse_mode = match media {
+        Photo(m) => &mut m.parse_mode,
+        Video(m) => &mut m.parse_mode,
+        Audio(m) => &mut m.parse_mode,
+        Document(m) => &mut m.parse_mode,
+        LivePhoto(m) => &mut m.parse_mode,
     };
 
     visitor(parse_mode);
