@@ -3,6 +3,15 @@ Note that the list of required changes is not fully exhaustive and it may lack s
 
 ## unreleased
 
+### teloxide
+
+`MessageFilterExt::filter_reply_to_message` now provides the replied-to message as the `teloxide::dispatching::ReplyToMessage` newtype instead of a plain `Message` (which used to override the original message). Both are now available:
+
+```diff
+-async fn handler(bot: Bot, replied: Message) -> ResponseResult<()> {
++async fn handler(bot: Bot, msg: Message, ReplyToMessage(replied): ReplyToMessage) -> ResponseResult<()> {
+```
+
 ### teloxide-core
 
 TBA 10.3 replaced the `receiver_user_id` and `callback_query_id` parameters on ephemeral-message send methods with `EphemeralMessageParameters`:
