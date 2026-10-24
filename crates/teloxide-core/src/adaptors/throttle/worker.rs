@@ -307,6 +307,7 @@ async fn freeze(
 ) {
     while let Some(freeze_until) = imm.take().or_else(|| rx.try_recv().ok()) {
         let FreezeUntil { until, after, chat } = freeze_until;
+        let mut slow_mode_enabled_and_likely_the_cause = false;
 
         // Clippy thinks that this `.as_deref_mut()` doesn't change the type (&mut
         // HashMap -> &mut HashMap), but it's actually a reborrow (the lifetimes
@@ -325,6 +326,8 @@ async fn freeze(
                             let now = Instant::now();
                             let new_delay = delay.duration();
                             slow_mode.insert(hash, (new_delay, now));
+                            slow_mode_enabled_and_likely_the_cause =
+                                !new_delay.is_zero() && after <= new_delay;
                         }
                         None => {
                             slow_mode.remove(&hash);
@@ -334,14 +337,10 @@ async fn freeze(
             }
         }
 
-        // slow mode is enabled and it is <= to the delay asked by telegram
-        let slow_mode_enabled_and_likely_the_cause = slow_mode
-            .as_ref()
-            .and_then(|m| m.get(&chat).map(|(delay, _)| delay <= &after))
-            .unwrap_or(false);
-
-        // Do not sleep if slow mode is enabled since the freeze is most likely caused
-        // by the said slow mode and not by the global limits.
+        // Only a successful current lookup with a positive slow mode interval can
+        // explain a remaining wait no longer than that interval. Never use stale
+        // cache entries to skip the global wait after a failed lookup.
+        // This is a heuristic: a short global RetryAfter can also fit the interval.
         if !slow_mode_enabled_and_likely_the_cause {
             log::warn!(
                 "freezing the bot for approximately {after:?} due to `RetryAfter` error from \
@@ -388,6 +387,286 @@ fn either<L, R>(x: future::Either<L, R>) -> Either<L, R> {
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        io::{Read, Write},
+        net::TcpListener,
+        sync::{
+            atomic::{AtomicBool, AtomicUsize, Ordering},
+            Arc,
+        },
+        thread,
+    };
+
+    use serde_json::{json, Value};
+
+    use crate::{
+        adaptors::throttle::{channel, worker::*, Throttle, ThrottlingRequest},
+        requests::{Request, Requester},
+        types::ChatId,
+        Bot,
+    };
+
+    // Exercise the real Bot API serialization/deserialization without another mock
+    // dependency. Every connection receives the configured getChat response.
+    struct MockApi {
+        bot: Bot,
+        calls: Arc<AtomicUsize>,
+        stop: Arc<AtomicBool>,
+        thread: Option<thread::JoinHandle<()>>,
+    }
+
+    impl MockApi {
+        fn new(response: Value) -> Self {
+            let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+            let address = listener.local_addr().unwrap();
+            listener.set_nonblocking(true).unwrap();
+            let calls = Arc::new(AtomicUsize::new(0));
+            let stop = Arc::new(AtomicBool::new(false));
+            let thread = {
+                let calls = Arc::clone(&calls);
+                let stop = Arc::clone(&stop);
+                thread::spawn(move || {
+                    while !stop.load(Ordering::SeqCst) {
+                        let (mut stream, _) = match listener.accept() {
+                            Ok(connection) => connection,
+                            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                                thread::sleep(Duration::from_millis(1));
+                                continue;
+                            }
+                            Err(error) => panic!("mock accept: {error}"),
+                        };
+                        stream.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+                        let mut request = Vec::new();
+                        let mut buffer = [0; 4096];
+                        loop {
+                            let n = stream.read(&mut buffer).unwrap();
+                            assert_ne!(n, 0);
+                            request.extend_from_slice(&buffer[..n]);
+                            if let Some(end) = request.windows(4).position(|w| w == b"\r\n\r\n") {
+                                let headers = String::from_utf8_lossy(&request[..end]);
+                                let length: usize = headers
+                                    .lines()
+                                    .find_map(|line| {
+                                        line.to_ascii_lowercase()
+                                            .strip_prefix("content-length:")
+                                            .map(|n| n.trim().parse().unwrap())
+                                    })
+                                    .unwrap_or(0);
+                                if request.len() >= end + 4 + length {
+                                    let path = headers.lines().next().unwrap();
+                                    assert!(
+                                        path.contains("/GetChat") || path.contains("/SendMessage")
+                                    );
+                                    break;
+                                }
+                            }
+                        }
+                        calls.fetch_add(1, Ordering::SeqCst);
+                        let body = response.to_string();
+                        write!(
+                            stream,
+                            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: \
+                             {}\r\nConnection: close\r\n\r\n{body}",
+                            body.len()
+                        )
+                        .unwrap();
+                    }
+                })
+            };
+            Self {
+                bot: Bot::new("123:test")
+                    .set_api_url(format!("http://{address}/").parse().unwrap()),
+                calls,
+                stop,
+                thread: Some(thread),
+            }
+        }
+    }
+
+    impl Drop for MockApi {
+        fn drop(&mut self) {
+            self.stop.store(true, Ordering::SeqCst);
+            self.thread.take().unwrap().join().unwrap();
+        }
+    }
+
+    fn chat_response(delay: Option<u32>) -> Value {
+        let mut chat = json!({
+            "id": -1000000000001_i64, "type": "supergroup", "title": "slow chat",
+            "max_reaction_count": 1,
+            "accepted_gift_types": {
+                "unlimited_gifts": false, "limited_gifts": false,
+                "unique_gifts": false, "premium_subscription": false
+            }
+        });
+        if let Some(delay) = delay {
+            chat["slow_mode_delay"] = json!(delay);
+        }
+        // Fail clearly if a fixture no longer represents a valid API response.
+        serde_json::from_value::<crate::types::ChatFullInfo>(chat.clone()).unwrap();
+        json!({"ok": true, "result": chat})
+    }
+
+    // Keep each case's inputs and expected observable effects together.
+    #[allow(clippy::too_many_arguments)]
+    async fn check_freeze(
+        response: Value,
+        after: u64,
+        enabled: bool,
+        stale: bool,
+        chat: ChatIdHash,
+        skips_global_wait: bool,
+        expected_delay: Option<u64>,
+        expected_calls: usize,
+    ) {
+        let api = MockApi::new(response);
+        let mut cache = HashMap::new();
+        if stale {
+            cache.insert(chat, (Duration::from_secs(900), Instant::now()));
+        }
+        let (_tx, mut rx) = mpsc::channel(1);
+        // Classification uses the real retry duration; the synthetic deadline
+        // lets us observe global sleeping without waiting fifteen minutes.
+        let event = FreezeUntil {
+            until: Instant::now() + Duration::from_secs(60),
+            after: Duration::from_secs(after),
+            chat,
+        };
+        let result = tokio::time::timeout(
+            Duration::from_millis(300),
+            freeze(&mut rx, enabled.then_some(&mut cache), &api.bot, Some(event)),
+        )
+        .await;
+        assert_eq!(result.is_ok(), skips_global_wait, "retry_after={after}");
+        assert_eq!(api.calls.load(Ordering::SeqCst), expected_calls);
+        assert_eq!(cache.get(&chat).map(|(delay, _)| delay.as_secs()), expected_delay);
+    }
+
+    const CHAT: ChatIdHash = ChatIdHash::Id(ChatId(-1000000000001));
+
+    #[tokio::test]
+    async fn slow_mode_remaining_wait_is_chat_local() {
+        for after in [899, 900, 30] {
+            check_freeze(chat_response(Some(900)), after, true, false, CHAT, true, Some(900), 1)
+                .await;
+        }
+    }
+
+    #[tokio::test]
+    async fn slow_mode_longer_wait_remains_global() {
+        for after in [901, 1800] {
+            check_freeze(chat_response(Some(900)), after, true, false, CHAT, false, Some(900), 1)
+                .await;
+        }
+    }
+
+    #[tokio::test]
+    async fn slow_mode_disabled_does_not_lookup() {
+        check_freeze(chat_response(Some(900)), 899, false, false, CHAT, false, None, 0).await;
+    }
+
+    #[tokio::test]
+    async fn slow_mode_missing_delay_removes_cache() {
+        check_freeze(chat_response(None), 899, true, true, CHAT, false, None, 1).await;
+    }
+
+    #[tokio::test]
+    async fn slow_mode_failed_lookup_cannot_use_stale_cache() {
+        for stale in [false, true] {
+            check_freeze(
+                json!({"ok": false, "error_code": 400, "description": "Bad Request: chat not found"}),
+                900, true, stale, CHAT, false, stale.then_some(900), 1,
+            ).await;
+        }
+    }
+
+    #[tokio::test]
+    async fn slow_mode_zero_delay_remains_global() {
+        check_freeze(chat_response(Some(0)), 1, true, false, CHAT, false, Some(0), 1).await;
+    }
+
+    #[tokio::test]
+    async fn slow_mode_username_does_not_lookup_or_use_cache() {
+        check_freeze(
+            chat_response(Some(900)),
+            900,
+            true,
+            true,
+            ChatIdHash::ChannelUsernameHash(42),
+            false,
+            Some(900),
+            0,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn slow_mode_worker_allows_other_chat_while_affected_chat_stays_paced() {
+        let api = MockApi::new(chat_response(Some(900)));
+        let (throttle, worker) = Throttle::with_settings(
+            api.bot.clone(),
+            Settings { check_slow_mode: true, ..Settings::default() },
+        );
+        let worker = tokio::spawn(worker);
+        let (first, wait) = channel();
+        throttle.queue.send((CHAT, first)).await.unwrap();
+        let (_, freeze) = wait.await;
+        freeze
+            .send(FreezeUntil {
+                until: Instant::now() + Duration::from_secs(899),
+                after: Duration::from_secs(899),
+                chat: CHAT,
+            })
+            .await
+            .unwrap();
+
+        let (affected, mut affected_wait) = channel();
+        let (other, other_wait) = channel();
+        throttle.queue.send((CHAT, affected)).await.unwrap();
+        throttle.queue.send((ChatIdHash::Id(ChatId(2)), other)).await.unwrap();
+        tokio::time::timeout(Duration::from_secs(2), other_wait)
+            .await
+            .expect("another chat must not be globally frozen");
+        assert_eq!(api.calls.load(Ordering::SeqCst), 1);
+        assert!(tokio::time::timeout(Duration::from_millis(300), &mut affected_wait)
+            .await
+            .is_err());
+        worker.abort();
+        assert!(worker.await.unwrap_err().is_cancelled());
+    }
+
+    #[tokio::test]
+    async fn slow_mode_request_keeps_its_own_retry_deadline() {
+        let api = MockApi::new(json!({
+            "ok": false, "error_code": 429, "description": "Too Many Requests: retry after 1",
+            "parameters": {"retry_after": 1}
+        }));
+        let (tx, mut rx) = mpsc::channel(1);
+        let request = ThrottlingRequest {
+            request: Arc::new(api.bot.send_message(ChatId(1), "test")),
+            chat_id: |_| CHAT,
+            worker: tx,
+        };
+        let task = tokio::spawn(request.send());
+        let (_, lock) = rx.recv().await.unwrap();
+        let (freeze_tx, mut freeze_rx) = mpsc::channel(1);
+        lock.unlock(true, freeze_tx).unwrap();
+        let event =
+            tokio::time::timeout(Duration::from_secs(2), freeze_rx.recv()).await.unwrap().unwrap();
+        assert_eq!(event.after, Duration::from_secs(1));
+        // Even if the worker immediately handles the freeze as chat-local, the
+        // request must not requeue before its own retry deadline.
+        assert!(tokio::time::timeout(Duration::from_millis(150), rx.recv()).await.is_err());
+        let (_, lock) =
+            tokio::time::timeout(Duration::from_secs(2), rx.recv()).await.unwrap().unwrap();
+        assert!(Instant::now() >= event.until);
+        let (freeze_tx, mut freeze_rx) = mpsc::channel(1);
+        lock.unlock(false, freeze_tx).unwrap();
+        freeze_rx.recv().await.unwrap();
+        assert!(task.await.unwrap().is_err());
+        assert_eq!(api.calls.load(Ordering::SeqCst), 2);
+    }
+
     #[tokio::test]
     async fn issue_535() {
         let (tx, mut rx) = tokio::sync::mpsc::channel(1);

@@ -211,6 +211,8 @@ where
             let _ = freeze.send(FreezeUntil { until, after, chat }).await;
 
             if retry {
+                // Keep this request's deadline even when the worker treats the
+                // RetryAfter as chat-local slow mode and lets other chats proceed.
                 log::warn!("Freezing, before retrying: {retry_after:?}");
                 tokio::time::sleep_until(until.into()).await;
             }
